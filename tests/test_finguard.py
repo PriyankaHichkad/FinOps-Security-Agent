@@ -109,7 +109,7 @@ def test_orchestrator_auto_block():
 
 def test_sha256_audit_chain_verification():
     """Verify SHA-256 cryptographic audit chain validation."""
-    if not orchestrator.audit_ledger:
+    if len(orchestrator.audit_chain) <= 1:
         orchestrator.process_event({
             "event_id": "TEST-INIT-01",
             "vendor_name": "Acme Corp",

@@ -187,6 +187,11 @@ class DecisionOrchestrator:
             "status": "TAMPER_EVIDENT_VALIDATED"
         }
 
+    @property
+    def audit_ledger(self) -> list:
+        """Property alias for self.audit_chain."""
+        return self.audit_chain
+
     def get_audit_ledger(self) -> list:
         """Returns the complete cryptographic audit ledger."""
         return self.audit_chain
