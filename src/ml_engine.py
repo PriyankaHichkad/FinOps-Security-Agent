@@ -12,8 +12,13 @@ from sklearn.linear_model import LogisticRegression
 from lightgbm import LGBMClassifier
 from xgboost import XGBClassifier
 from imblearn.over_sampling import SMOTE
-import mlflow
-import mlflow.sklearn
+try:
+    import mlflow
+    import mlflow.sklearn
+    HAS_MLFLOW = True
+except ImportError:
+    HAS_MLFLOW = False
+    mlflow = None
 
 from src.logger import logger, FinGuardException
 
@@ -126,11 +131,12 @@ class MLEngine:
             X_train_res, y_train_res = smote.fit_resample(X_train_pca, y_train)
 
             # MLflow Setup
-            try:
-                mlflow.end_run()
-                mlflow.set_experiment("FinGuard_Fraud_ML_Benchmark")
-            except Exception as e_exp:
-                logger.warning(f"MLflow experiment init warning: {e_exp}")
+            if HAS_MLFLOW and mlflow:
+                try:
+                    mlflow.end_run()
+                    mlflow.set_experiment("FinGuard_Fraud_ML_Benchmark")
+                except Exception as e_exp:
+                    logger.warning(f"MLflow experiment init warning: {e_exp}")
 
             candidates = [
                 ("LightGBM", LGBMClassifier(n_estimators=100, learning_rate=0.05, num_leaves=31, random_state=42, verbosity=-1)),
@@ -173,20 +179,21 @@ class MLEngine:
                     })
 
                     # Safely log to MLflow without blocking execution
-                    try:
-                        mlflow.end_run()
-                        with mlflow.start_run(run_name=f"Model_{name}"):
-                            mlflow.log_param("model_name", name)
-                            mlflow.log_param("pca_components", components_95)
-                            mlflow.log_param("smote_oversampling", True)
-                            mlflow.log_metric("pr_auc", pr_auc_val)
-                            mlflow.log_metric("roc_auc", roc_auc_val)
-                            mlflow.log_metric("precision", prec)
-                            mlflow.log_metric("recall", rec)
-                            mlflow.log_metric("f1_score", f1)
-                        mlflow.end_run()
-                    except Exception as e_mlflow:
-                        logger.warning(f"MLflow logging skipped for {name}: {e_mlflow}")
+                    if HAS_MLFLOW and mlflow:
+                        try:
+                            mlflow.end_run()
+                            with mlflow.start_run(run_name=f"Model_{name}"):
+                                mlflow.log_param("model_name", name)
+                                mlflow.log_param("pca_components", components_95)
+                                mlflow.log_param("smote_oversampling", True)
+                                mlflow.log_metric("pr_auc", pr_auc_val)
+                                mlflow.log_metric("roc_auc", roc_auc_val)
+                                mlflow.log_metric("precision", prec)
+                                mlflow.log_metric("recall", rec)
+                                mlflow.log_metric("f1_score", f1)
+                            mlflow.end_run()
+                        except Exception as e_mlflow:
+                            logger.warning(f"MLflow logging skipped for {name}: {e_mlflow}")
 
                 except Exception as e_cand:
                     logger.error(f"Error training candidate {name}: {e_cand}")
