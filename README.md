@@ -112,13 +112,18 @@ pip install -r requirements.txt
 pytest tests/ -v
 ```
 
-### 3. Launch Streamlit Dashboard
+### 3. Run Reproducible DVC Pipeline
+```bash
+dvc repro
+```
+
+### 4. Launch Streamlit Dashboard
 ```bash
 streamlit run app_analytics.py
 ```
 * Access Dashboard live at `http://localhost:8501`.
 
-### 4. Launch FastAPI REST Server
+### 5. Launch FastAPI REST Server
 ```bash
 uvicorn main:app --reload --port 8000
 ```

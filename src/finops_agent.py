@@ -28,6 +28,37 @@ class FinOpsAgent:
             logger.error(f"Failed to load vendor master database: {e}")
             return {"approved_vendors": []}
 
+    def tool_register_new_vendor(self, vendor_name: str, auto_approval_limit: float = 10000.0, risk_rating: str = "LOW") -> dict:
+        """
+        Tool Call: Registers and approves a new vendor in the vendor_master.json database
+        upon human manager sign-off.
+        """
+        if not vendor_name:
+            return {"status": "ERROR", "message": "Vendor name required"}
+
+        vendor_clean = vendor_name.strip()
+        new_id = f"VEND-{len(self.vendor_master.get('approved_vendors', [])) + 101}"
+
+        new_entry = {
+            "vendor_id": new_id,
+            "vendor_name": vendor_clean,
+            "status": "APPROVED",
+            "auto_approval_limit": float(auto_approval_limit),
+            "risk_rating": risk_rating
+        }
+
+        self.vendor_master.setdefault("approved_vendors", []).append(new_entry)
+
+        try:
+            with open(VENDOR_MASTER_PATH, "w") as f:
+                json.dump(self.vendor_master, f, indent=2)
+            logger.info(f"Vendor '{vendor_clean}' successfully onboarded with limit ${auto_approval_limit:,.2f}")
+            return {"status": "SUCCESS", "vendor_entry": new_entry}
+        except Exception as e:
+            logger.error(f"Failed to write vendor master update: {e}")
+            return {"status": "ERROR", "message": str(e)}
+
+
     @staticmethod
     def compute_name_email_similarity(name: str, email: str) -> float:
         """

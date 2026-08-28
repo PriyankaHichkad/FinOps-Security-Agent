@@ -1,0 +1,13 @@
+stages:
+  train_ml_engine:
+    cmd: python src/ml_engine.py
+    deps:
+      - data/BAF_NeurIPS_2022.csv
+      - src/ml_engine.py
+    outs:
+      - artifacts/champion_model.pkl
+      - artifacts/scaler.pkl
+      - artifacts/pca_transformer.pkl
+    metrics:
+      - artifacts/pca_metrics.json:
+          cache: false
