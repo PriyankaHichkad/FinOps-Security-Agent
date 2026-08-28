@@ -126,7 +126,11 @@ class MLEngine:
             X_train_res, y_train_res = smote.fit_resample(X_train_pca, y_train)
 
             # MLflow Setup
-            mlflow.set_experiment("FinGuard_Fraud_ML_Benchmark")
+            try:
+                mlflow.end_run()
+                mlflow.set_experiment("FinGuard_Fraud_ML_Benchmark")
+            except Exception as e_exp:
+                logger.warning(f"MLflow experiment init warning: {e_exp}")
 
             candidates = [
                 ("LightGBM", LGBMClassifier(n_estimators=100, learning_rate=0.05, num_leaves=31, random_state=42, verbosity=-1)),
@@ -141,20 +145,37 @@ class MLEngine:
 
             for name, model_inst in candidates:
                 try:
-                    with mlflow.start_run(run_name=f"Model_{name}"):
-                        model_inst.fit(X_train_res, y_train_res)
-                        y_proba = model_inst.predict_proba(X_test_pca)[:, 1]
-                        y_pred = (y_proba >= 0.50).astype(int)
+                    model_inst.fit(X_train_res, y_train_res)
+                    y_proba = model_inst.predict_proba(X_test_pca)[:, 1]
+                    y_pred = (y_proba >= 0.50).astype(int)
 
-                        precision_curve, recall_curve, _ = precision_recall_curve(y_test, y_proba)
-                        pr_auc_val = float(auc(recall_curve, precision_curve))
-                        roc_auc_val = float(roc_auc_score(y_test, y_proba))
-                        prec = float(precision_score(y_test, y_pred, zero_division=0))
-                        rec = float(recall_score(y_test, y_pred, zero_division=0))
-                        f1 = float(f1_score(y_test, y_pred, zero_division=0))
+                    precision_curve, recall_curve, _ = precision_recall_curve(y_test, y_proba)
+                    pr_auc_val = float(auc(recall_curve, precision_curve))
+                    roc_auc_val = float(roc_auc_score(y_test, y_proba))
+                    prec = float(precision_score(y_test, y_pred, zero_division=0))
+                    rec = float(recall_score(y_test, y_pred, zero_division=0))
+                    f1 = float(f1_score(y_test, y_pred, zero_division=0))
 
-                        # Log Params & Metrics in MLflow safely
-                        try:
+                    status = "Candidate"
+                    if pr_auc_val > best_pr_auc:
+                        best_pr_auc = pr_auc_val
+                        champion_model = model_inst
+                        status = "🏆 Champion Model"
+
+                    self.comparison_matrix.append({
+                        "model_name": name,
+                        "pr_auc": round(pr_auc_val, 4),
+                        "roc_auc": round(roc_auc_val, 4),
+                        "precision": round(prec, 4),
+                        "recall": round(rec, 4),
+                        "f1_score": round(f1, 4),
+                        "status": status
+                    })
+
+                    # Safely log to MLflow without blocking execution
+                    try:
+                        mlflow.end_run()
+                        with mlflow.start_run(run_name=f"Model_{name}"):
                             mlflow.log_param("model_name", name)
                             mlflow.log_param("pca_components", components_95)
                             mlflow.log_param("smote_oversampling", True)
@@ -163,34 +184,13 @@ class MLEngine:
                             mlflow.log_metric("precision", prec)
                             mlflow.log_metric("recall", rec)
                             mlflow.log_metric("f1_score", f1)
-                        except Exception as e_mlflow:
-                            logger.warning(f"MLflow logging warning for {name}: {e_mlflow}")
+                        mlflow.end_run()
+                    except Exception as e_mlflow:
+                        logger.warning(f"MLflow logging skipped for {name}: {e_mlflow}")
 
-                        status = "Candidate"
-                        if pr_auc_val > best_pr_auc:
-                            best_pr_auc = pr_auc_val
-                            champion_model = model_inst
-                            status = "🏆 Champion Model"
+                except Exception as e_cand:
+                    logger.error(f"Error training candidate {name}: {e_cand}")
 
-                        self.comparison_matrix.append({
-                            "model_name": name,
-                            "pr_auc": round(pr_auc_val, 4),
-                            "roc_auc": round(roc_auc_val, 4),
-                            "precision": round(prec, 4),
-                            "recall": round(rec, 4),
-                            "f1_score": round(f1, 4),
-                            "status": status
-                        })
-                except Exception as e_candidate:
-                    logger.error(f"Candidate {name} failed: {e_candidate}")
-                    # Fallback fit if MLflow wrapper failed
-                    model_inst.fit(X_train_res, y_train_res)
-                    y_proba = model_inst.predict_proba(X_test_pca)[:, 1]
-                    precision_curve, recall_curve, _ = precision_recall_curve(y_test, y_proba)
-                    pr_auc_val = float(auc(recall_curve, precision_curve))
-                    if pr_auc_val > best_pr_auc:
-                        best_pr_auc = pr_auc_val
-                        champion_model = model_inst
 
 
             self.model = champion_model if champion_model is not None else candidates[0][1]
