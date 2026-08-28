@@ -1,0 +1,39 @@
+{
+  "approved_vendors": [
+    {
+      "vendor_id": "VEND-101",
+      "vendor_name": "Acme Corp",
+      "status": "APPROVED",
+      "auto_approval_limit": 10000.0,
+      "risk_rating": "LOW"
+    },
+    {
+      "vendor_id": "VEND-102",
+      "vendor_name": "TechData Inc",
+      "status": "APPROVED",
+      "auto_approval_limit": 15000.0,
+      "risk_rating": "LOW"
+    },
+    {
+      "vendor_id": "VEND-103",
+      "vendor_name": "Global Logistics LLC",
+      "status": "APPROVED",
+      "auto_approval_limit": 8000.0,
+      "risk_rating": "MEDIUM"
+    },
+    {
+      "vendor_id": "VEND-104",
+      "vendor_name": "Apex Cloud Systems",
+      "status": "APPROVED",
+      "auto_approval_limit": 20000.0,
+      "risk_rating": "LOW"
+    },
+    {
+      "vendor_id": "VEND-999",
+      "vendor_name": "Unknown Supplies",
+      "status": "UNAPPROVED",
+      "auto_approval_limit": 0.0,
+      "risk_rating": "HIGH"
+    }
+  ]
+}
