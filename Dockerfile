@@ -19,4 +19,4 @@ COPY . .
 EXPOSE 8000 8501
 
 # Default command: launch Streamlit app
-CMD ["streamlit", "run", "app_analytics.py", "--server.port=8501", "--server.address=0.0.0.0"]
+CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]

@@ -28,7 +28,7 @@ The system is designed as a **decoupled multi-agent micro-architecture** compose
 ```mermaid
 flowchart TD
     subgraph ClientLayer ["Client & API Interface"]
-        StreamlitUI["app_analytics.py: Streamlit Dashboard"]
+        StreamlitUI["app.py: Streamlit Dashboard"]
         FastAPIEndpoint["main.py: REST Server (/decide)"]
     end
 

@@ -92,7 +92,7 @@ FinOps-Security-Agent/
 ├── artifacts/                # Saved Model (.pkl) & Metrics (.json)
 ├── tests/
 │   └── test_finguard.py      # 10 Passing PyTest Unit Tests
-├── app_analytics.py          # Streamlit Interactive Dashboard UI
+├── app.py                    # Streamlit Interactive Dashboard UI
 ├── main.py                   # FastAPI REST Server (/decide, /audit/verify, /metrics)
 ├── Dockerfile                # Container Deployment Blueprint
 ├── pyproject.toml            # Package Metadata
@@ -126,7 +126,7 @@ dvc repro
 
 ### 4. Launch Streamlit Dashboard
 ```bash
-streamlit run app_analytics.py
+streamlit run app.py
 ```
 * Access Dashboard live at `http://localhost:8501`.
 

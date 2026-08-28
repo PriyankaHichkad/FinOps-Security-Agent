@@ -37,7 +37,7 @@ jobs:
 
     - name: Verify App Syntax & Imports
       run: |
-        python -m py_compile app_analytics.py
+        python -m py_compile app.py
         python -m py_compile main.py
 
     - name: Execute Automated PyTest Suite

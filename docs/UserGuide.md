@@ -39,7 +39,7 @@ cd FinOps-Security-Agent
 pip install -r requirements.txt
 
 # 3. Launch Streamlit Analytics Dashboard
-streamlit run app_analytics.py
+streamlit run app.py
 
 # 4. Launch FastAPI REST Server (in a separate terminal window)
 uvicorn main:app --reload --port 8000
