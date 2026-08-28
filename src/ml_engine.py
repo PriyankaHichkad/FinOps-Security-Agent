@@ -253,27 +253,32 @@ class MLEngine:
         fraud_labels[:100] = 1
         np.random.shuffle(fraud_labels)
 
+        base_signal = np.random.randn(n_samples)
+        velocity_6h = np.random.randint(1, 20, n_samples)
+        velocity_24h = (velocity_6h * 3.5 + np.random.normal(0, 1, n_samples)).astype(int)
+        velocity_4w = (velocity_24h * 4.2 + np.random.normal(0, 5, n_samples)).astype(int)
+
         data = {
-            "income": np.random.uniform(0.1, 0.9, n_samples),
+            "income": 0.5 + base_signal * 0.1,
             "name_email_similarity": np.random.uniform(0.01, 1.0, n_samples),
             "prev_address_months_count": np.random.randint(0, 100, n_samples),
             "current_address_months_count": np.random.randint(0, 100, n_samples),
             "customer_age": np.random.randint(18, 70, n_samples),
             "days_since_request": np.random.uniform(0.0, 10.0, n_samples),
-            "intended_balcon_amount": np.random.uniform(-10.0, 100.0, n_samples),
-            "zip_count_4w": np.random.randint(500, 3000, n_samples),
-            "velocity_6h": np.random.randint(1, 20, n_samples),
-            "velocity_24h": np.random.randint(1, 40, n_samples),
-            "velocity_4week": np.random.randint(10, 200, n_samples),
+            "intended_balcon_amount": base_signal * 10.0 + 20.0,
+            "zip_count_4w": velocity_4w * 10 + 500,
+            "velocity_6h": velocity_6h,
+            "velocity_24h": velocity_24h,
+            "velocity_4week": velocity_4w,
             "bank_branch_count_8w": np.random.randint(0, 20, n_samples),
             "date_of_birth_distinct_emails_4w": np.random.randint(1, 15, n_samples),
-            "credit_risk_score": np.random.randint(300, 850, n_samples),
+            "credit_risk_score": (650 + base_signal * 50).astype(int),
             "email_is_free": np.random.choice([0, 1], n_samples),
             "phone_home_valid": np.random.choice([0, 1], n_samples),
             "phone_mobile_valid": np.random.choice([0, 1], n_samples),
             "bank_months_count": np.random.randint(0, 30, n_samples),
             "has_other_cards": np.random.choice([0, 1], n_samples),
-            "proposed_credit_limit": np.random.uniform(200.0, 2000.0, n_samples),
+            "proposed_credit_limit": (1000 + base_signal * 300),
             "foreign_request": np.random.choice([0, 1], n_samples),
             "session_length_in_minutes": np.random.uniform(1.0, 30.0, n_samples),
             "keep_alive_session": np.random.choice([0, 1], n_samples),
