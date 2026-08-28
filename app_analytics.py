@@ -167,9 +167,18 @@ with tab_batch:
             st.dataframe(df_res)
 
 # ---------------------------------------------------------
-# TAB 3: PCA VARIANCE ANALYTICS
+# TAB 3: PCA & MLFLOW EXPERIMENT ANALYTICS
 # ---------------------------------------------------------
 with tab_pca:
+    st.subheader("MLflow Multi-Model Candidate Comparison Matrix")
+    comparison_data = ml_engine.get_comparison_matrix()
+    if comparison_data:
+        df_comp = pd.DataFrame(comparison_data)
+        st.dataframe(df_comp, use_container_width=True)
+    else:
+        st.info("Run training pipeline to populate MLflow experiment comparison matrix.")
+
+    st.divider()
     st.subheader("PCA Mathematical Explained Variance Ratio (Scree Plot)")
     pca_metrics = ml_engine.get_pca_metrics()
 
@@ -198,6 +207,7 @@ with tab_pca:
                 legend=dict(x=0.6, y=0.2)
             )
             st.plotly_chart(fig, use_container_width=True)
+
 
 # ---------------------------------------------------------
 # TAB 4: CRYPTOGRAPHIC AUDIT LEDGER

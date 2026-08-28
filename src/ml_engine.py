@@ -4,11 +4,17 @@ import joblib
 import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
-from sklearn.preprocessing import RobustScaler, LabelEncoder
+from sklearn.preprocessing import RobustScaler
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import precision_recall_curve, auc, roc_auc_score, precision_score, recall_score, f1_score
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 from lightgbm import LGBMClassifier
+from xgboost import XGBClassifier
 from imblearn.over_sampling import SMOTE
+import mlflow
+import mlflow.sklearn
+
 from src.logger import logger, FinGuardException
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -20,6 +26,7 @@ MODEL_PATH = os.path.join(ARTIFACTS_DIR, "champion_model.pkl")
 SCALER_PATH = os.path.join(ARTIFACTS_DIR, "scaler.pkl")
 PCA_PATH = os.path.join(ARTIFACTS_DIR, "pca_transformer.pkl")
 METRICS_PATH = os.path.join(ARTIFACTS_DIR, "pca_metrics.json")
+COMPARISON_PATH = os.path.join(ARTIFACTS_DIR, "model_comparison_matrix.json")
 
 FEATURE_COLUMNS = [
     "income", "name_email_similarity", "prev_address_months_count",
@@ -35,14 +42,15 @@ FEATURE_COLUMNS = [
 class MLEngine:
     """
     NeurIPS 2022 Bank Account Fraud (BAF) ML & PCA Variance Engine.
-    Implements 95% Cumulative Variance Thresholding (PCA Scree Plot Analytics)
-    and sub-10ms LightGBM Fraud Probability Inference.
+    Implements MLflow Experiment Tracking, 95% Cumulative Variance Thresholding,
+    Multi-Model Candidate Comparison (LightGBM, XGBoost, RF, LR), and Sub-10ms Inference.
     """
     def __init__(self):
         self.scaler = None
         self.pca = None
         self.model = None
         self.pca_metrics = {}
+        self.comparison_matrix = []
         self._load_or_train()
 
     def _load_or_train(self):
@@ -55,12 +63,14 @@ class MLEngine:
                 if os.path.exists(METRICS_PATH):
                     with open(METRICS_PATH, "r") as f:
                         self.pca_metrics = json.load(f)
+                if os.path.exists(COMPARISON_PATH):
+                    with open(COMPARISON_PATH, "r") as f:
+                        self.comparison_matrix = json.load(f)
             else:
-                logger.info("Artifacts not found. Initiating ML Training & PCA Variance Pipeline...")
+                logger.info("Artifacts not found. Initiating MLflow Experiment Tracking & Training Pipeline...")
                 self.train_pipeline()
         except Exception as e:
             logger.error(f"Error initializing ML Engine: {e}")
-            # Fallback to training if loading fails
             self.train_pipeline()
 
     def train_pipeline(self):
@@ -69,18 +79,15 @@ class MLEngine:
                 logger.warning(f"Dataset not found at {DATA_PATH}. Generating synthetic BAF benchmark dataset...")
                 self._generate_synthetic_baf_data()
 
-            logger.info("Reading dataset for PCA Analysis & Model Training...")
+            logger.info("Reading dataset for PCA Analysis & MLflow Experiment Tracking...")
             df = pd.read_csv(DATA_PATH)
             
-            # Select available numeric/categorical features
             existing_cols = [col for col in FEATURE_COLUMNS if col in df.columns]
             X = df[existing_cols].copy()
             y = df["fraud_bool"] if "fraud_bool" in df.columns else np.random.choice([0, 1], size=len(df), p=[0.95, 0.05])
 
-            # Fill missing values
             X = X.fillna(X.median(numeric_only=True))
 
-            # Train/Test Split
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 
             # Robust Scaling
@@ -97,7 +104,6 @@ class MLEngine:
             evr = pca_full.explained_variance_ratio_.tolist()
             cum_evr = np.cumsum(evr).tolist()
 
-            # Find components needed for 95% variance threshold
             components_95 = int(np.argmax(np.array(cum_evr) >= 0.95) + 1)
             if components_95 < 2:
                 components_95 = min(5, X_train_scaled.shape[1])
@@ -115,45 +121,81 @@ class MLEngine:
                 "cumulative_variance_ratio": cum_evr
             }
 
-            with open(METRICS_PATH, "w") as f:
-                json.dump(self.pca_metrics, f, indent=2)
-
             # SMOTE Oversampling
-            logger.info("Applying SMOTE Imbalance Management...")
             smote = SMOTE(random_state=42)
             X_train_res, y_train_res = smote.fit_resample(X_train_pca, y_train)
 
-            # LightGBM Classifier Training
-            logger.info("Training LightGBM Champion Model...")
-            self.model = LGBMClassifier(
-                n_estimators=100,
-                learning_rate=0.05,
-                num_leaves=31,
-                random_state=42,
-                verbosity=-1
-            )
-            self.model.fit(X_train_res, y_train_res)
+            # MLflow Setup
+            mlflow.set_experiment("FinGuard_Fraud_ML_Benchmark")
 
-            # Evaluation
-            y_pred_proba = self.model.predict_proba(X_test_pca)[:, 1]
-            precision, recall, _ = precision_recall_curve(y_test, y_pred_proba)
-            pr_auc = float(auc(recall, precision))
-            roc_auc = float(roc_auc_score(y_test, y_pred_proba))
+            candidates = [
+                ("LightGBM", LGBMClassifier(n_estimators=100, learning_rate=0.05, num_leaves=31, random_state=42, verbosity=-1)),
+                ("XGBoost", XGBClassifier(n_estimators=100, learning_rate=0.05, max_depth=6, random_state=42, eval_metric="logloss")),
+                ("Random Forest", RandomForestClassifier(n_estimators=100, max_depth=10, random_state=42)),
+                ("Logistic Regression", LogisticRegression(max_iter=1000, random_state=42))
+            ]
 
-            self.pca_metrics["pr_auc"] = pr_auc
-            self.pca_metrics["roc_auc"] = roc_auc
+            self.comparison_matrix = []
+            best_pr_auc = -1.0
+            champion_model = None
 
+            for name, model_inst in candidates:
+                with mlflow.start_run(run_name=f"Model_{name}"):
+                    model_inst.fit(X_train_res, y_train_res)
+                    y_proba = model_inst.predict_proba(X_test_pca)[:, 1]
+                    y_pred = (y_proba >= 0.50).astype(int)
+
+                    precision_curve, recall_curve, _ = precision_recall_curve(y_test, y_proba)
+                    pr_auc_val = float(auc(recall_curve, precision_curve))
+                    roc_auc_val = float(roc_auc_score(y_test, y_proba))
+                    prec = float(precision_score(y_test, y_pred, zero_division=0))
+                    rec = float(recall_score(y_test, y_pred, zero_division=0))
+                    f1 = float(f1_score(y_test, y_pred, zero_division=0))
+
+                    # Log Params & Metrics in MLflow
+                    mlflow.log_param("model_name", name)
+                    mlflow.log_param("pca_components", components_95)
+                    mlflow.log_param("smote_oversampling", True)
+                    mlflow.log_metric("pr_auc", pr_auc_val)
+                    mlflow.log_metric("roc_auc", roc_auc_val)
+                    mlflow.log_metric("precision", prec)
+                    mlflow.log_metric("recall", rec)
+                    mlflow.log_metric("f1_score", f1)
+
+                    status = "Candidate"
+                    if pr_auc_val > best_pr_auc:
+                        best_pr_auc = pr_auc_val
+                        champion_model = model_inst
+                        status = "🏆 Champion Model"
+
+                    self.comparison_matrix.append({
+                        "model_name": name,
+                        "pr_auc": round(pr_auc_val, 4),
+                        "roc_auc": round(roc_auc_val, 4),
+                        "precision": round(prec, 4),
+                        "recall": round(rec, 4),
+                        "f1_score": round(f1, 4),
+                        "status": status
+                    })
+
+            self.model = champion_model if champion_model is not None else candidates[0][1]
+            self.pca_metrics["pr_auc"] = best_pr_auc
+
+            # Save artifacts
             with open(METRICS_PATH, "w") as f:
                 json.dump(self.pca_metrics, f, indent=2)
 
-            # Save artifacts
+            with open(COMPARISON_PATH, "w") as f:
+                json.dump(self.comparison_matrix, f, indent=2)
+
             joblib.dump(self.model, MODEL_PATH)
             joblib.dump(self.scaler, SCALER_PATH)
             joblib.dump(self.pca, PCA_PATH)
-            logger.info(f"Model trained successfully. PR-AUC: {pr_auc:.4f}, ROC-AUC: {roc_auc:.4f}")
+
+            logger.info(f"MLflow Training Complete. Champion PR-AUC: {best_pr_auc:.4f}")
 
         except Exception as e:
-            logger.error(f"Failed to execute training pipeline: {e}")
+            logger.error(f"Failed to execute MLflow training pipeline: {e}")
             raise FinGuardException(e)
 
     def _generate_synthetic_baf_data(self):
@@ -195,17 +237,14 @@ class MLEngine:
 
     def predict_fraud_risk(self, input_dict: dict) -> dict:
         """
-        Runs sub-10ms LightGBM fraud risk prediction with robust feature fallback.
-        Returns fraud_probability (float) and risk_tier (LOW, MEDIUM, HIGH).
+        Sub-10ms LightGBM fraud risk prediction.
         """
         try:
-            # Prepare feature vector with flexible fallbacks
             row = {}
             for col in FEATURE_COLUMNS:
                 if col in input_dict and input_dict[col] is not None:
                     row[col] = float(input_dict[col])
                 else:
-                    # Smart default fallbacks
                     defaults = {
                         "income": 0.5,
                         "name_email_similarity": 0.5,
@@ -238,7 +277,6 @@ class MLEngine:
             }
         except Exception as e:
             logger.error(f"Prediction failed in ML Engine: {e}")
-            # Safe fallback if inference encounters an issue
             return {
                 "fraud_probability": 0.15,
                 "risk_tier": "LOW",
@@ -247,8 +285,10 @@ class MLEngine:
             }
 
     def get_pca_metrics(self) -> dict:
-        """Returns PCA mathematical variance summary and scree plot metrics."""
         return self.pca_metrics
+
+    def get_comparison_matrix(self) -> list:
+        return self.comparison_matrix
 
 # Global Singleton Instance
 ml_engine = MLEngine()
