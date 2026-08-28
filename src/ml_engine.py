@@ -11,7 +11,13 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from lightgbm import LGBMClassifier
 from xgboost import XGBClassifier
-from imblearn.over_sampling import SMOTE
+try:
+    from imblearn.over_sampling import SMOTE
+    HAS_SMOTE = True
+except ImportError:
+    HAS_SMOTE = False
+    SMOTE = None
+
 try:
     import mlflow
     import mlflow.sklearn
@@ -126,9 +132,15 @@ class MLEngine:
                 "cumulative_variance_ratio": cum_evr
             }
 
-            # SMOTE Oversampling
-            smote = SMOTE(random_state=42)
-            X_train_res, y_train_res = smote.fit_resample(X_train_pca, y_train)
+            # SMOTE Oversampling (Optional)
+            if HAS_SMOTE and SMOTE is not None:
+                try:
+                    smote = SMOTE(random_state=42)
+                    X_train_res, y_train_res = smote.fit_resample(X_train_pca, y_train)
+                except Exception:
+                    X_train_res, y_train_res = X_train_pca, y_train
+            else:
+                X_train_res, y_train_res = X_train_pca, y_train
 
             # MLflow Setup
             if HAS_MLFLOW and mlflow:
