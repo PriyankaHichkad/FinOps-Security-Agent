@@ -1,6 +1,7 @@
 # FinOps-Security-Agent
 
-[![Python 3.9+](https.img.shields.io/badge/Python-3.9+-green.svg)](https://www.python.org/)
+[![CI/CD Pipeline](https://github.com/PriyankaHichkad/FinOps-Security-Agent/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/PriyankaHichkad/FinOps-Security-Agent/actions)
+[![Python 3.9+](https://img.shields.io/badge/Python-3.9+-green.svg)](https://www.python.org/)
 [![MLOps Pipeline](https://img.shields.io/badge/MLOps-Pipeline-blue.svg)](https://github.com/PriyankaHichkad/FinOps-Security-Agent)
 [![Dataset](https://img.shields.io/badge/Dataset-NeurIPS%2022%20BAF-orange.svg)](https://www.kaggle.com/datasets/sgpjesus/bank-account-fraud-dataset-neurips-2022)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
