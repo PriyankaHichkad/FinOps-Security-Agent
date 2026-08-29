@@ -102,6 +102,8 @@ class MLEngine:
             if not os.path.exists(DATA_PATH):
                 logger.warning(f"Dataset not found at {DATA_PATH}. Generating synthetic BAF benchmark dataset...")
                 self._generate_synthetic_baf_data()
+            else:
+                logger.info(f"Real dataset detected at {DATA_PATH} ({os.path.getsize(DATA_PATH)/1e6:.2f} MB). Skipping synthetic generation.")
 
             logger.info("Reading dataset for PCA Analysis & MLflow Experiment Tracking...")
             df = pd.read_csv(DATA_PATH)

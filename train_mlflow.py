@@ -22,8 +22,7 @@ def main():
     mlflow.set_experiment("FinGuard_Fraud_ML_Benchmark")
     engine = MLEngine()
 
-    print("\n2. Regenerating NeurIPS 2022 Benchmark Dataset & Retraining Pipeline...")
-    engine._generate_synthetic_baf_data()
+    print("\n2. Retraining MLflow Experimentation Pipeline...")
     engine.train_pipeline()
 
     print("\n" + "=" * 70)
