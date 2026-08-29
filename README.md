@@ -4,15 +4,8 @@
 [![Python 3.9+](https://img.shields.io/badge/Python-3.9+-green.svg)](https://www.python.org/)
 [![MLOps Pipeline](https://img.shields.io/badge/MLOps-Pipeline-blue.svg)](https://github.com/PriyankaHichkad/FinOps-Security-Agent)
 [![Dataset](https://img.shields.io/badge/Dataset-NeurIPS%2022%20BAF-orange.svg)](https://www.kaggle.com/datasets/sgpjesus/bank-account-fraud-dataset-neurips-2022)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 > **FinOps and Security Compliance Agent with NeurIPS ML fraud risk scoring and SHA-256 audit logging.**
-
-📖 **Documentation Quick Links**:
-- 📘 [**User & REST API Guide**](docs/UserGuide.md) — Comprehensive guide on using the Dashboard UI, REST endpoints, and vendor master rules.
-- 📙 [**Developer & Architecture Guide**](docs/DeveloperGuide.md) — System architecture, Mermaid sequence diagrams, component designs, and design trade-off rationales.
-
----
 
 An enterprise-grade autonomous decisioning engine that integrates **NeurIPS 2022 Bank Account Fraud (BAF)** tabular ML risk scoring, **Financial Operations (FinOps)** deterministic policy rules, **Security & Compliance (SecOps)** UEBA anomaly detection, and a **tamper-evident SHA-256 cryptographic audit ledger**.
 
@@ -41,7 +34,7 @@ flowchart TD
 
     subgraph ServingLayer ["4. Serving & Business Intelligence"]
         FastAPI["main.py: FastAPI REST Server (/decide, /audit/verify)"]
-        StreamlitApp["app_analytics.py: Streamlit Dashboard UI"]
+        StreamlitApp["app.py: Streamlit Dashboard UI"]
     end
 
     InputEvent & BAFData --> PCAReduction & FinOpsPolicy & SecOpsAnomaly
@@ -148,5 +141,6 @@ uvicorn main:app --reload --port 8000
 
 ---
 
-## 📜 License
-Distributed under the MIT License. See `LICENSE` for details.
+## 📖 Documentation & Guides
+- [User & REST API Guide](docs/UserGuide.md)
+- [Developer & Architecture Guide](docs/DeveloperGuide.md)
