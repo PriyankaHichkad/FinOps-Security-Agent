@@ -8,6 +8,7 @@ stages:
       - artifacts/champion_model.pkl
       - artifacts/scaler.pkl
       - artifacts/pca_transformer.pkl
+      - data/audit_ledger.json
     metrics:
       - artifacts/pca_metrics.json:
           cache: false
