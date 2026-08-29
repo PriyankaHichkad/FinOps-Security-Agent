@@ -17,12 +17,13 @@ st.set_page_config(
     page_title="FinOps & Security Compliance Agent Dashboard",
     page_icon="🛡️",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 # Custom Styling
 st.markdown("""
     <style>
+    [data-testid="stSidebar"] { display: none; }
     .main-title { font-size: 2.2rem; font-weight: 700; color: #1E293B; margin-bottom: 0.5rem; }
     .subtitle { font-size: 1.0rem; color: #64748B; margin-bottom: 1.5rem; }
     .verdict-approve { background-color: #DCFCE7; color: #166534; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 1.2rem; border-left: 6px solid #22C55E; }
@@ -33,14 +34,6 @@ st.markdown("""
 
 st.markdown('<div class="main-title">🛡️ FinOps & Security Compliance Agent</div>', unsafe_allow_html=True)
 st.markdown('<div class="subtitle">Autonomous Financial Ops Decisioning • NeurIPS 2022 Fraud ML • SHA-256 Cryptographic Audit Ledger</div>', unsafe_allow_html=True)
-
-# Sidebar Information
-st.sidebar.image("https://img.icons8.com/color/96/000000/shield-with-signature.png", width=64)
-st.sidebar.title("FinGuard Control Panel")
-st.sidebar.markdown("**System Status**: 🟢 Operational")
-st.sidebar.markdown("**ML Champion**: LightGBM (PR-AUC 1.00)")
-st.sidebar.markdown("**PCA Variance Target**: 95% EVR Threshold")
-st.sidebar.divider()
 
 # Core Tabs
 tab_sim, tab_batch, tab_pca, tab_audit = st.tabs([
