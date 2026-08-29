@@ -332,21 +332,25 @@ class MLEngine:
         Sub-10ms LightGBM fraud risk prediction.
         """
         try:
+            v6 = float(input_dict.get("velocity_6h", 1.0))
+            defaults = {
+                "income": 0.5,
+                "name_email_similarity": 0.5,
+                "velocity_6h": v6,
+                "velocity_24h": round(v6 * 3.5, 2),
+                "velocity_4week": round(v6 * 14.7, 2),
+                "credit_risk_score": 650.0,
+                "date_of_birth_distinct_emails_4w": 1.0,
+                "customer_age": 35.0,
+                "proposed_credit_limit": 1000.0,
+                "session_length_in_minutes": 15.0,
+                "keep_alive_session": 1.0
+            }
             row = {}
             for col in FEATURE_COLUMNS:
                 if col in input_dict and input_dict[col] is not None:
                     row[col] = float(input_dict[col])
                 else:
-                    defaults = {
-                        "income": 0.5,
-                        "name_email_similarity": 0.5,
-                        "velocity_6h": 1.0,
-                        "velocity_24h": 2.0,
-                        "credit_risk_score": 650.0,
-                        "date_of_birth_distinct_emails_4w": 1.0,
-                        "customer_age": 35.0,
-                        "proposed_credit_limit": 1000.0
-                    }
                     row[col] = defaults.get(col, 0.0)
 
             df_input = pd.DataFrame([row])
