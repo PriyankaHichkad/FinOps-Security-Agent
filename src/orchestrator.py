@@ -6,6 +6,10 @@ from src.ml_engine import ml_engine
 from src.finops_agent import finops_agent
 from src.security_agent import security_agent
 
+import os
+
+LEDGER_FILE_PATH = os.path.join("data", "audit_ledger.json")
+
 class DecisionOrchestrator:
     """
     Multi-Agent Decision Orchestrator & Cryptographic Ledger Engine.
@@ -14,7 +18,30 @@ class DecisionOrchestrator:
     """
     def __init__(self):
         self.audit_chain = []
+        self._load_or_initialize_ledger()
+
+    def _load_or_initialize_ledger(self):
+        """Loads existing audit ledger from disk or initializes genesis block."""
+        if os.path.exists(LEDGER_FILE_PATH):
+            try:
+                with open(LEDGER_FILE_PATH, "r") as f:
+                    self.audit_chain = json.load(f)
+                if self.audit_chain:
+                    return
+            except Exception as e:
+                logger.warning(f"Could not load audit ledger from disk: {e}")
+        
+        self.audit_chain = []
         self._initialize_genesis_block()
+
+    def _save_ledger_to_disk(self):
+        """Saves current audit chain to disk."""
+        try:
+            os.makedirs(os.path.dirname(LEDGER_FILE_PATH), exist_ok=True)
+            with open(LEDGER_FILE_PATH, "w") as f:
+                json.dump(self.audit_chain, f, indent=2)
+        except Exception as e:
+            logger.error(f"Failed to persist audit ledger to disk: {e}")
 
     def _initialize_genesis_block(self):
         """Initializes the tamper-evident cryptographic genesis block."""
@@ -59,6 +86,7 @@ class DecisionOrchestrator:
         }
         record["current_hash"] = self._calculate_hash(record)
         self.audit_chain.append(record)
+        self._save_ledger_to_disk()
         return record
 
     def process_event(self, input_dict: dict) -> dict:
