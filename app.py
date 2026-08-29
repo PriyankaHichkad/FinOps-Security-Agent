@@ -79,6 +79,29 @@ with tab_sim:
         notes = st.text_area("Transaction Notes / Description", "Routine monthly subscription invoice payment.")
         actor_id = st.text_input("Actor ID", "USR-9042")
 
+    with st.expander("⚙️ Advanced NeurIPS ML Parameters (Optional — All 26 Features)"):
+        col_adv1, col_adv2, col_adv3 = st.columns(3)
+        with col_adv1:
+            customer_age = st.slider("Customer Age", 18, 90, 35)
+            prev_address_months = st.number_input("Prev Address Months", 0, 200, 24)
+            current_address_months = st.number_input("Current Address Months", 0, 200, 36)
+            bank_months_count = st.number_input("Bank Months Count", 0, 100, 12)
+            has_other_cards = st.selectbox("Has Other Cards", [0, 1], index=0)
+
+        with col_adv2:
+            proposed_credit_limit = st.number_input("Proposed Credit Limit ($)", 200.0, 50000.0, 2000.0)
+            intended_balcon_amount = st.number_input("Intended Transfer Amount ($)", 0.0, 50000.0, 0.0)
+            bank_branch_count_8w = st.number_input("Bank Branch Count (8w)", 0, 50, 2)
+            date_of_birth_distinct_emails = st.number_input("DOB Distinct Emails (4w)", 1, 20, 1)
+            session_length_in_minutes = st.number_input("Session Length (Minutes)", 0.0, 120.0, 15.0)
+
+        with col_adv3:
+            device_distinct_emails_8w = st.number_input("Device Distinct Emails (8w)", 1, 10, 1)
+            device_fraud_count = st.number_input("Device Fraud Count", 0, 10, 0)
+            foreign_request = st.selectbox("Foreign Request", [0, 1], index=0)
+            keep_alive_session = st.selectbox("Keep Alive Session", [0, 1], index=1)
+            days_since_request = st.number_input("Days Since Request", 0.0, 30.0, 0.5)
+
     if st.button("⚡ Evaluate Decision", type="primary", use_container_width=True):
         input_data = {
             "applicant_name": applicant_name,
@@ -91,7 +114,22 @@ with tab_sim:
             "velocity_6h": velocity_6h,
             "access_hour": access_hour,
             "notes": notes,
-            "actor_id": actor_id
+            "actor_id": actor_id,
+            "customer_age": customer_age,
+            "prev_address_months_count": prev_address_months,
+            "current_address_months_count": current_address_months,
+            "bank_months_count": bank_months_count,
+            "has_other_cards": has_other_cards,
+            "proposed_credit_limit": proposed_credit_limit,
+            "intended_balcon_amount": intended_balcon_amount,
+            "bank_branch_count_8w": bank_branch_count_8w,
+            "date_of_birth_distinct_emails_4w": date_of_birth_distinct_emails,
+            "session_length_in_minutes": session_length_in_minutes,
+            "device_distinct_emails_8w": device_distinct_emails_8w,
+            "device_fraud_count": device_fraud_count,
+            "foreign_request": foreign_request,
+            "keep_alive_session": keep_alive_session,
+            "days_since_request": days_since_request
         }
 
         res = orchestrator.process_event(input_data)
