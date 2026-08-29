@@ -63,6 +63,7 @@ def test_security_ueba_anomaly():
 
 def test_orchestrator_auto_approve():
     """Verify AUTO_APPROVE verdict for clean, low-impact transaction."""
+    finops_agent.reset_ledgers()
     clean_input = {
         "event_id": "TEST-APPROVE-01",
         "applicant_name": "Alice Johnson",
@@ -81,6 +82,7 @@ def test_orchestrator_auto_approve():
 
 def test_orchestrator_route_to_human():
     """Verify ROUTE_TO_HUMAN_REVIEW for high dollar transaction ($15,000 > $10,000 cap)."""
+    finops_agent.reset_ledgers()
     high_impact_input = {
         "event_id": "TEST-ROUTE-01",
         "applicant_name": "Bob Marley",
@@ -97,6 +99,7 @@ def test_orchestrator_route_to_human():
 
 def test_orchestrator_auto_block():
     """Verify AUTO_BLOCK for prompt injection attempt."""
+    finops_agent.reset_ledgers()
     malicious_input = {
         "event_id": "TEST-BLOCK-01",
         "vendor_name": "Acme Corp",

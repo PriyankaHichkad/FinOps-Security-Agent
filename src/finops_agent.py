@@ -16,7 +16,13 @@ class FinOpsAgent:
     """
     def __init__(self):
         self.vendor_master = self._load_vendor_master()
-        self.processed_ledger = set()  # Tracks (vendor, amount_float, date)
+        self.processed_ledger = set()  # Tracks (vendor, amount_float, po_number, date)
+        self.daily_spending_ledger = {} # Tracks (user, vendor, date) -> cumulative_amount
+
+    def reset_ledgers(self):
+        """Resets historical and daily spending ledgers (useful for testing and session reset)."""
+        self.processed_ledger.clear()
+        self.daily_spending_ledger.clear()
 
     def _load_vendor_master(self) -> dict:
         try:
