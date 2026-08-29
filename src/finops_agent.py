@@ -34,7 +34,7 @@ class FinOpsAgent:
             logger.error(f"Failed to load vendor master database: {e}")
             return {"approved_vendors": []}
 
-    def tool_register_new_vendor(self, vendor_name: str, auto_approval_limit: float = 10000.0, risk_rating: str = "LOW") -> dict:
+    def tool_register_new_vendor(self, vendor_name: str, category: str = "General Procurement", risk_rating: str = "LOW") -> dict:
         """
         Tool Call: Registers and approves a new vendor in the vendor_master.json database
         upon human manager sign-off.
@@ -49,8 +49,9 @@ class FinOpsAgent:
             "vendor_id": new_id,
             "vendor_name": vendor_clean,
             "status": "APPROVED",
-            "auto_approval_limit": float(auto_approval_limit),
-            "risk_rating": risk_rating
+            "category": category,
+            "risk_rating": risk_rating,
+            "contract_status": "ACTIVE"
         }
 
         self.vendor_master.setdefault("approved_vendors", []).append(new_entry)
@@ -58,7 +59,7 @@ class FinOpsAgent:
         try:
             with open(VENDOR_MASTER_PATH, "w") as f:
                 json.dump(self.vendor_master, f, indent=2)
-            logger.info(f"Vendor '{vendor_clean}' successfully onboarded with limit ${auto_approval_limit:,.2f}")
+            logger.info(f"Vendor '{vendor_clean}' successfully onboarded into vendor master database.")
             return {"status": "SUCCESS", "vendor_entry": new_entry}
         except Exception as e:
             logger.error(f"Failed to write vendor master update: {e}")
@@ -117,9 +118,9 @@ class FinOpsAgent:
         return 1.0
 
     def tool_query_vendor_master(self, vendor_name: str) -> dict:
-        """Tool call: Queries data/vendor_master.json for vendor status and approval caps."""
+        """Tool call: Queries data/vendor_master.json for vendor status and metadata."""
         if not vendor_name:
-            return {"status": "UNAPPROVED", "auto_approval_limit": 0.0, "risk_rating": "HIGH"}
+            return {"status": "UNAPPROVED", "category": "Unclassified", "risk_rating": "HIGH", "contract_status": "UNVERIFIED"}
 
         vendor_name_clean = vendor_name.strip().lower()
         for v in self.vendor_master.get("approved_vendors", []):
@@ -132,7 +133,7 @@ class FinOpsAgent:
             if ratio >= 0.80:
                 return v
 
-        return {"status": "UNAPPROVED", "auto_approval_limit": 0.0, "risk_rating": "HIGH"}
+        return {"status": "UNAPPROVED", "category": "Unclassified", "risk_rating": "HIGH", "contract_status": "UNVERIFIED"}
 
     def tool_reconcile_po(self, po_number: str, amount: float) -> dict:
         """Tool call: Reconciles purchase order presence and amount tolerances."""
@@ -213,7 +214,7 @@ class FinOpsAgent:
             hard_deny = False
 
             # Rule 1: User / Account Spending Limit Cap ($10,000 Default / User Credit Limit)
-            user_limit = float(input_dict.get("proposed_credit_limit") or vendor_info.get("auto_approval_limit", 10000.0))
+            user_limit = float(input_dict.get("proposed_credit_limit") or 10000.0)
             cumulative_today = self.tool_check_cumulative_daily_spending(raw_vendor, amount, user_id)
 
             if amount > user_limit:

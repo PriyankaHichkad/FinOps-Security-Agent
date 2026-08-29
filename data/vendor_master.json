@@ -4,36 +4,41 @@
       "vendor_id": "VEND-101",
       "vendor_name": "Acme Corp",
       "status": "APPROVED",
-      "auto_approval_limit": 10000.0,
-      "risk_rating": "LOW"
+      "category": "Office Supplies & Subscriptions",
+      "risk_rating": "LOW",
+      "contract_status": "ACTIVE"
     },
     {
       "vendor_id": "VEND-102",
       "vendor_name": "TechData Inc",
       "status": "APPROVED",
-      "auto_approval_limit": 15000.0,
-      "risk_rating": "LOW"
+      "category": "IT & Cloud Infrastructure",
+      "risk_rating": "LOW",
+      "contract_status": "ACTIVE"
     },
     {
       "vendor_id": "VEND-103",
       "vendor_name": "Global Logistics LLC",
       "status": "APPROVED",
-      "auto_approval_limit": 8000.0,
-      "risk_rating": "MEDIUM"
+      "category": "Logistics & Freight",
+      "risk_rating": "MEDIUM",
+      "contract_status": "ACTIVE"
     },
     {
       "vendor_id": "VEND-104",
       "vendor_name": "Apex Cloud Systems",
       "status": "APPROVED",
-      "auto_approval_limit": 20000.0,
-      "risk_rating": "LOW"
+      "category": "SaaS & Cloud Computing",
+      "risk_rating": "LOW",
+      "contract_status": "ACTIVE"
     },
     {
       "vendor_id": "VEND-999",
       "vendor_name": "Unknown Supplies",
       "status": "UNAPPROVED",
-      "auto_approval_limit": 0.0,
-      "risk_rating": "HIGH"
+      "category": "Unclassified",
+      "risk_rating": "HIGH",
+      "contract_status": "UNVERIFIED"
     }
   ]
 }
