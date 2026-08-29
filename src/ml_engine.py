@@ -9,7 +9,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import precision_recall_curve, auc, roc_auc_score, precision_score, recall_score, f1_score
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC
+from sklearn.svm import LinearSVC
+from sklearn.calibration import CalibratedClassifierCV
 try:
     from lightgbm import LGBMClassifier
     HAS_LGBM = True
@@ -42,7 +43,13 @@ except ImportError:
 from src.logger import logger, FinGuardException
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_PATH = os.path.join(BASE_DIR, "data", "BAF_NeurIPS_2022.csv")
+REAL_KAGGLE_PATH = os.path.join(BASE_DIR, "data", "BAF_NeurIPS_2022_dataset", "Base.csv")
+SINGLE_CSV_PATH = os.path.join(BASE_DIR, "data", "BAF_NeurIPS_2022.csv")
+
+if os.path.exists(REAL_KAGGLE_PATH):
+    DATA_PATH = REAL_KAGGLE_PATH
+else:
+    DATA_PATH = SINGLE_CSV_PATH
 ARTIFACTS_DIR = os.path.join(BASE_DIR, "artifacts")
 os.makedirs(ARTIFACTS_DIR, exist_ok=True)
 
@@ -108,6 +115,12 @@ class MLEngine:
             logger.info("Reading dataset for PCA Analysis & MLflow Experiment Tracking...")
             df = pd.read_csv(DATA_PATH)
             
+            if len(df) > 100000 and "fraud_bool" in df.columns:
+                logger.info(f"Dataset has {len(df):,} rows. Sampling 100,000 stratified rows for fast benchmark training...")
+                df = df.groupby("fraud_bool", group_keys=False).apply(
+                    lambda x: x.sample(min(len(x), int(100000 * len(x) / len(df))), random_state=42)
+                )
+
             existing_cols = [col for col in FEATURE_COLUMNS if col in df.columns]
             X = df[existing_cols].copy()
             y = df["fraud_bool"] if "fraud_bool" in df.columns else np.random.choice([0, 1], size=len(df), p=[0.95, 0.05])
@@ -173,7 +186,7 @@ class MLEngine:
                 candidates.append(("XGBoost", XGBClassifier(n_estimators=100, learning_rate=0.05, max_depth=6, random_state=42, eval_metric="logloss")))
             candidates.append(("Random Forest", RandomForestClassifier(n_estimators=100, max_depth=10, random_state=42)))
             candidates.append(("Logistic Regression", LogisticRegression(max_iter=1000, random_state=42)))
-            candidates.append(("Support Vector Machine (SVM)", SVC(probability=True, random_state=42)))
+            candidates.append(("Support Vector Machine (SVM)", CalibratedClassifierCV(LinearSVC(dual=False, random_state=42))))
 
             self.comparison_matrix = []
             best_pr_auc = -1.0
