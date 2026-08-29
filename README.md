@@ -1,11 +1,12 @@
 # FinOps-Security-Agent
 
-[![CI/CD Pipeline](https://github.com/PriyankaHichkad/FinOps-Security-Agent/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/PriyankaHichkad/FinOps-Security-Agent/actions)
-[![Python 3.9+](https://img.shields.io/badge/Python-3.9+-green.svg)](https://www.python.org/)
-[![MLOps Pipeline](https://img.shields.io/badge/MLOps-Pipeline-blue.svg)](https://github.com/PriyankaHichkad/FinOps-Security-Agent)
-[![Dataset](https://img.shields.io/badge/Dataset-NeurIPS%2022%20BAF-orange.svg)](https://www.kaggle.com/datasets/sgpjesus/bank-account-fraud-dataset-neurips-2022)
-
 > **FinOps and Security Compliance Agent with NeurIPS ML fraud risk scoring and SHA-256 audit logging.**
+
+📖 **Documentation Quick Links**:
+- 📘 [**User & REST API Guide**](docs/UserGuide.md) — Comprehensive guide on using the Dashboard UI, REST endpoints, and vendor master rules.
+- 📙 [**Developer & Architecture Guide**](docs/DeveloperGuide.md) — System architecture, Mermaid sequence diagrams, component designs, and design trade-off rationales.
+
+---
 
 An enterprise-grade autonomous decisioning engine that integrates **NeurIPS 2022 Bank Account Fraud (BAF)** tabular ML risk scoring, **Financial Operations (FinOps)** deterministic policy rules, **Security & Compliance (SecOps)** UEBA anomaly detection, and a **tamper-evident SHA-256 cryptographic audit ledger**.
 
@@ -141,6 +142,8 @@ uvicorn main:app --reload --port 8000
 
 ---
 
-## 📖 Documentation & Guides
-- [User & REST API Guide](docs/UserGuide.md)
-- [Developer & Architecture Guide](docs/DeveloperGuide.md)
+## 🛠 Tools & Tech Stack
+- [CI/CD Pipeline](https://github.com/PriyankaHichkad/FinOps-Security-Agent/actions)
+- [Python 3.9+](https://www.python.org/)
+- [MLOps Pipeline](https://github.com/PriyankaHichkad/FinOps-Security-Agent)
+- [NeurIPS 2022 Bank Account Fraud Dataset](https://www.kaggle.com/datasets/sgpjesus/bank-account-fraud-dataset-neurips-2022)
