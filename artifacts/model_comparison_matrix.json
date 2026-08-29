@@ -1,47 +1,47 @@
 [
   {
     "model_name": "LightGBM",
-    "pr_auc": 0.0412,
-    "roc_auc": 0.7227,
-    "precision": 0.0254,
-    "recall": 0.5455,
-    "f1_score": 0.0486,
+    "pr_auc": 0.0765,
+    "roc_auc": 0.6971,
+    "precision": 0.0127,
+    "recall": 0.9545,
+    "f1_score": 0.025,
     "status": "\ud83c\udfc6 Champion Model"
   },
   {
     "model_name": "XGBoost",
-    "pr_auc": 0.0434,
-    "roc_auc": 0.7403,
-    "precision": 0.0269,
-    "recall": 0.5955,
-    "f1_score": 0.0515,
-    "status": "\ud83c\udfc6 Champion Model"
+    "pr_auc": 0.0439,
+    "roc_auc": 0.6809,
+    "precision": 0.0125,
+    "recall": 0.9409,
+    "f1_score": 0.0247,
+    "status": "Candidate"
   },
   {
     "model_name": "Random Forest",
-    "pr_auc": 0.0472,
-    "roc_auc": 0.7367,
-    "precision": 0.0318,
-    "recall": 0.3682,
-    "f1_score": 0.0585,
-    "status": "\ud83c\udfc6 Champion Model"
+    "pr_auc": 0.0371,
+    "roc_auc": 0.7164,
+    "precision": 0.024,
+    "recall": 0.4773,
+    "f1_score": 0.0457,
+    "status": "Candidate"
   },
   {
     "model_name": "Logistic Regression",
-    "pr_auc": 0.0449,
-    "roc_auc": 0.6966,
+    "pr_auc": 0.0452,
+    "roc_auc": 0.6998,
     "precision": 0.022,
-    "recall": 0.5364,
+    "recall": 0.5318,
     "f1_score": 0.0422,
     "status": "Candidate"
   },
   {
     "model_name": "Support Vector Machine (SVM)",
-    "pr_auc": 0.0448,
-    "roc_auc": 0.6956,
-    "precision": 0.0,
-    "recall": 0.0,
-    "f1_score": 0.0,
+    "pr_auc": 0.045,
+    "roc_auc": 0.6979,
+    "precision": 0.0224,
+    "recall": 0.5409,
+    "f1_score": 0.043,
     "status": "Candidate"
   }
 ]
