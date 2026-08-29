@@ -49,8 +49,8 @@ def main():
     print("🌐 HOW TO VIEW EXPERIMENTS IN MLFLOW UI")
     print("=" * 70)
     print("Run the following command in your terminal to view the interactive dashboard:")
-    print("  mlflow ui --backend-store-uri sqlite:///mlflow.db --port 5000")
-    print("\nThen open your browser at: http://localhost:5000")
+    print("  python3 -m mlflow ui --backend-store-uri sqlite:///mlflow.db --port 5001")
+    print("\nThen open your browser at: http://localhost:5001")
     print("You will see the 'FinGuard_Fraud_ML_Benchmark' experiment with candidate comparisons & champion hyperparameters!")
     print("=" * 70)
 
