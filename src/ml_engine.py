@@ -333,18 +333,36 @@ class MLEngine:
         """
         try:
             v6 = float(input_dict.get("velocity_6h", 1.0))
+            email_str = str(input_dict.get("email", "")).lower()
+            email_is_free_default = 1.0 if any(dom in email_str for dom in ["@gmail.com", "@yahoo.com", "@hotmail.com", "@outlook.com"]) else 0.0
+
             defaults = {
                 "income": 0.5,
                 "name_email_similarity": 0.5,
+                "prev_address_months_count": 24.0,
+                "current_address_months_count": 36.0,
+                "customer_age": 35.0,
+                "days_since_request": 0.5,
+                "intended_balcon_amount": 0.0,
+                "zip_count_4w": 1000.0,
                 "velocity_6h": v6,
                 "velocity_24h": round(v6 * 3.5, 2),
                 "velocity_4week": round(v6 * 14.7, 2),
-                "credit_risk_score": 650.0,
+                "bank_branch_count_8w": 1.0,
                 "date_of_birth_distinct_emails_4w": 1.0,
-                "customer_age": 35.0,
+                "credit_risk_score": 650.0,
+                "email_is_free": email_is_free_default,
+                "phone_home_valid": 1.0,
+                "phone_mobile_valid": 1.0,
+                "bank_months_count": 12.0,
+                "has_other_cards": 0.0,
                 "proposed_credit_limit": 1000.0,
+                "foreign_request": 0.0,
                 "session_length_in_minutes": 15.0,
-                "keep_alive_session": 1.0
+                "keep_alive_session": 1.0,
+                "device_distinct_emails_8w": 1.0,
+                "device_fraud_count": 0.0,
+                "month": 5.0
             }
             row = {}
             for col in FEATURE_COLUMNS:
