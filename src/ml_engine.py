@@ -207,10 +207,14 @@ class MLEngine:
                     if HAS_MLFLOW and mlflow:
                         try:
                             mlflow.end_run()
-                            with mlflow.start_run(run_name=f"Model_{name}"):
+                            with mlflow.start_run(run_name=f"Candidate_{name}"):
                                 mlflow.log_param("model_name", name)
                                 mlflow.log_param("pca_components", components_95)
                                 mlflow.log_param("smote_oversampling", True)
+                                if hasattr(model_inst, "get_params"):
+                                    for p_k, p_v in model_inst.get_params().items():
+                                        if isinstance(p_v, (int, float, str, bool)):
+                                            mlflow.log_param(p_k, p_v)
                                 mlflow.log_metric("pr_auc", pr_auc_val)
                                 mlflow.log_metric("roc_auc", roc_auc_val)
                                 mlflow.log_metric("precision", prec)
@@ -222,8 +226,6 @@ class MLEngine:
 
                 except Exception as e_cand:
                     logger.error(f"Error training candidate {name}: {e_cand}")
-
-
 
             if champion_model is not None:
                 self.model = champion_model
@@ -246,6 +248,30 @@ class MLEngine:
             joblib.dump(self.model, MODEL_PATH)
             joblib.dump(self.scaler, SCALER_PATH)
             joblib.dump(self.pca, PCA_PATH)
+
+            # Log Final Champion Model explicitly in MLflow
+            if HAS_MLFLOW and mlflow:
+                try:
+                    mlflow.end_run()
+                    with mlflow.start_run(run_name="🏆_CHAMPION_MODEL"):
+                        mlflow.set_tag("stage", "Production_Champion")
+                        mlflow.log_param("champion_architecture", type(self.model).__name__)
+                        mlflow.log_param("pca_components_retained", components_95)
+                        mlflow.log_param("cumulative_variance", self.pca_metrics.get("cumulative_variance_explained"))
+                        
+                        if hasattr(self.model, "get_params"):
+                            for p_k, p_v in self.model.get_params().items():
+                                if isinstance(p_v, (int, float, str, bool)):
+                                    mlflow.log_param(f"hyperparam_{p_k}", p_v)
+
+                        mlflow.log_metric("champion_pr_auc", best_pr_auc)
+                        mlflow.log_artifact(MODEL_PATH)
+                        mlflow.log_artifact(METRICS_PATH)
+                        mlflow.log_artifact(COMPARISON_PATH)
+                    mlflow.end_run()
+                    logger.info("Successfully logged Production Champion Model and hyperparameters into MLflow.")
+                except Exception as e_champ:
+                    logger.warning(f"MLflow champion logging notice: {e_champ}")
 
             logger.info(f"MLflow Training Complete. Champion PR-AUC: {best_pr_auc:.4f}")
 
