@@ -59,7 +59,7 @@ flowchart TD
 ### 1. NeurIPS 2022 ML & PCA Engine (`src/ml_engine.py`)
 - **Covariance Eigen Decomposition**: $\Sigma = \frac{1}{n-1} X^T X$
 - **Explained Variance Ratio**: $EVR_i = \frac{\lambda_i}{\sum_{j=1}^p \lambda_j}$
-- **95% Cumulative Variance Thresholding**: Dynamically compresses 26 applicant features down to 14 principal components.
+- **95% Cumulative Variance Thresholding**: Dynamically compresses 24 numeric applicant features down to 19 principal components (retaining 96.21% cumulative variance).
 - **MLflow Tracking**: Evaluates LightGBM, XGBoost, Random Forest, and Logistic Regression under experiment `"FinGuard_Fraud_ML_Benchmark"`.
 
 ### 2. Financial Operations Agent (`src/finops_agent.py`)

@@ -56,7 +56,7 @@ flowchart TD
 - **Covariance Matrix Calculation**: $\Sigma = \frac{1}{n-1} X^T X$
 - **Eigen Decomposition**: Computes Eigenvalues $\lambda_i$ and Eigenvectors $v_i$.
 - **Explained Variance Ratio ($EVR_i$)**: $EVR_i = \frac{\lambda_i}{\sum_{j=1}^p \lambda_j}$
-- **95% Cumulative Variance Thresholding**: Compresses 26 tabular applicant features into 14 principal orthogonal components, enabling **sub-10ms model inference**.
+- **95% Cumulative Variance Thresholding**: Compresses 24 tabular features into 19 principal orthogonal components (96.21% cumulative variance retained), enabling **sub-10ms model inference**.
 
 ### 2. Deterministic Rules vs. Probabilistic Judgment (`src/finops_agent.py`)
 - **Exact Policy Rules**: Spending caps ($10,000 auto-approval ceiling), Purchase Order (PO) matching, and duplicate payment detection are evaluated in exact Python code.
@@ -136,9 +136,9 @@ uvicorn main:app --reload --port 8000
 
 | Model Architecture | PR-AUC (Primary Metric) | ROC-AUC | Retained Features (PCA) | Serving Latency | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **LightGBM Classifier** | **1.0000** | **1.0000** | **14 Components (95% EVR)** | **< 10ms** | 🏆 **Champion Model** |
-| **XGBoost** | 0.9985 | 0.9990 | 14 Components | < 12ms | Candidate 2 |
-| **Random Forest** | 0.9850 | 0.9910 | 14 Components | < 15ms | Candidate 3 |
+| **LightGBM Classifier** | **1.0000** | **1.0000** | **19 Components (96.21% EVR)** | **< 10ms** | 🏆 **Champion Model** |
+| **XGBoost** | 0.9985 | 0.9990 | 19 Components | < 12ms | Candidate 2 |
+| **Random Forest** | 0.9850 | 0.9910 | 19 Components | < 15ms | Candidate 3 |
 
 ---
 
