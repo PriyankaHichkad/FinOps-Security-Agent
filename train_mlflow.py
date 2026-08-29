@@ -14,6 +14,12 @@ def main():
     print("=" * 70)
     
     print("\n1. Initializing ML Engine...")
+    import os
+    import mlflow
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    db_path = os.path.abspath(os.path.join(base_dir, "mlflow.db"))
+    mlflow.set_tracking_uri(f"sqlite:///{db_path}")
+    mlflow.set_experiment("FinGuard_Fraud_ML_Benchmark")
     engine = MLEngine()
 
     print("\n2. Regenerating NeurIPS 2022 Benchmark Dataset & Retraining Pipeline...")
@@ -43,7 +49,7 @@ def main():
     print("🌐 HOW TO VIEW EXPERIMENTS IN MLFLOW UI")
     print("=" * 70)
     print("Run the following command in your terminal to view the interactive dashboard:")
-    print("  mlflow ui --port 5000")
+    print("  mlflow ui --backend-store-uri sqlite:///mlflow.db --port 5000")
     print("\nThen open your browser at: http://localhost:5000")
     print("You will see the 'FinGuard_Fraud_ML_Benchmark' experiment with candidate comparisons & champion hyperparameters!")
     print("=" * 70)

@@ -154,10 +154,11 @@ class MLEngine:
             else:
                 X_train_res, y_train_res = X_train_pca, y_train
 
-            # MLflow Setup
+            # MLflow Setup (Production SQLite Database Backend)
             if HAS_MLFLOW and mlflow:
                 try:
-                    mlflow.end_run()
+                    db_path = os.path.abspath(os.path.join(BASE_DIR, "mlflow.db"))
+                    mlflow.set_tracking_uri(f"sqlite:///{db_path}")
                     mlflow.set_experiment("FinGuard_Fraud_ML_Benchmark")
                 except Exception as e_exp:
                     logger.warning(f"MLflow experiment init warning: {e_exp}")
