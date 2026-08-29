@@ -9,8 +9,20 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import precision_recall_curve, auc, roc_auc_score, precision_score, recall_score, f1_score
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from lightgbm import LGBMClassifier
-from xgboost import XGBClassifier
+try:
+    from lightgbm import LGBMClassifier
+    HAS_LGBM = True
+except ImportError:
+    HAS_LGBM = False
+    LGBMClassifier = None
+
+try:
+    from xgboost import XGBClassifier
+    HAS_XGB = True
+except ImportError:
+    HAS_XGB = False
+    XGBClassifier = None
+
 try:
     from imblearn.over_sampling import SMOTE
     HAS_SMOTE = True
@@ -150,12 +162,13 @@ class MLEngine:
                 except Exception as e_exp:
                     logger.warning(f"MLflow experiment init warning: {e_exp}")
 
-            candidates = [
-                ("LightGBM", LGBMClassifier(n_estimators=100, learning_rate=0.05, num_leaves=31, random_state=42, verbosity=-1)),
-                ("XGBoost", XGBClassifier(n_estimators=100, learning_rate=0.05, max_depth=6, random_state=42, eval_metric="logloss")),
-                ("Random Forest", RandomForestClassifier(n_estimators=100, max_depth=10, random_state=42)),
-                ("Logistic Regression", LogisticRegression(max_iter=1000, random_state=42))
-            ]
+            candidates = []
+            if HAS_LGBM and LGBMClassifier is not None:
+                candidates.append(("LightGBM", LGBMClassifier(n_estimators=100, learning_rate=0.05, num_leaves=31, random_state=42, verbosity=-1)))
+            if HAS_XGB and XGBClassifier is not None:
+                candidates.append(("XGBoost", XGBClassifier(n_estimators=100, learning_rate=0.05, max_depth=6, random_state=42, eval_metric="logloss")))
+            candidates.append(("Random Forest", RandomForestClassifier(n_estimators=100, max_depth=10, random_state=42)))
+            candidates.append(("Logistic Regression", LogisticRegression(max_iter=1000, random_state=42)))
 
             self.comparison_matrix = []
             best_pr_auc = -1.0
@@ -260,15 +273,26 @@ class MLEngine:
         n_samples = 1000
         np.random.seed(42)
 
-        # Deterministically balanced fraud labels (100 positive cases)
-        fraud_labels = np.zeros(n_samples, dtype=int)
-        fraud_labels[:100] = 1
-        np.random.shuffle(fraud_labels)
-
         base_signal = np.random.randn(n_samples)
         velocity_6h = np.random.randint(1, 20, n_samples)
         velocity_24h = (velocity_6h * 3.5 + np.random.normal(0, 1, n_samples)).astype(int)
         velocity_4w = (velocity_24h * 4.2 + np.random.normal(0, 5, n_samples)).astype(int)
+        credit_scores = np.random.randint(300, 850, n_samples)
+        dob_emails = np.random.randint(1, 15, n_samples)
+        device_fraud_counts = np.random.choice([0, 1, 2, 3], size=n_samples, p=[0.85, 0.08, 0.04, 0.03])
+        keep_alive = np.random.choice([0, 1], size=n_samples, p=[0.2, 0.8])
+        session_mins = np.random.uniform(0.1, 30.0, n_samples)
+
+        # Ground truth fraud labels correlated with risk signals
+        risk_score = (
+            (credit_scores < 480).astype(int) * 2 +
+            (velocity_6h > 6).astype(int) * 2 +
+            (dob_emails > 5).astype(int) * 2 +
+            (device_fraud_counts > 0).astype(int) * 3 +
+            (keep_alive == 0).astype(int) +
+            (session_mins < 0.5).astype(int)
+        )
+        fraud_labels = (risk_score >= 4).astype(int)
 
         data = {
             "income": 0.5 + base_signal * 0.1,
@@ -283,8 +307,8 @@ class MLEngine:
             "velocity_24h": velocity_24h,
             "velocity_4week": velocity_4w,
             "bank_branch_count_8w": np.random.randint(0, 20, n_samples),
-            "date_of_birth_distinct_emails_4w": np.random.randint(1, 15, n_samples),
-            "credit_risk_score": (650 + base_signal * 50).astype(int),
+            "date_of_birth_distinct_emails_4w": dob_emails,
+            "credit_risk_score": credit_scores,
             "email_is_free": np.random.choice([0, 1], n_samples),
             "phone_home_valid": np.random.choice([0, 1], n_samples),
             "phone_mobile_valid": np.random.choice([0, 1], n_samples),
@@ -292,10 +316,10 @@ class MLEngine:
             "has_other_cards": np.random.choice([0, 1], n_samples),
             "proposed_credit_limit": (1000 + base_signal * 300),
             "foreign_request": np.random.choice([0, 1], n_samples),
-            "session_length_in_minutes": np.random.uniform(1.0, 30.0, n_samples),
-            "keep_alive_session": np.random.choice([0, 1], n_samples),
+            "session_length_in_minutes": session_mins,
+            "keep_alive_session": keep_alive,
             "device_distinct_emails_8w": np.random.randint(1, 5, n_samples),
-            "device_fraud_count": np.zeros(n_samples),
+            "device_fraud_count": device_fraud_counts,
             "month": np.random.randint(0, 7, n_samples),
             "fraud_bool": fraud_labels
         }

@@ -35,9 +35,8 @@ jobs:
       run: |
         dvc pull -r dagshub --no-git || true
 
-    - name: Verify App Syntax & Imports
+    - name: Verify API Syntax & Imports
       run: |
-        python -m py_compile app.py
         python -m py_compile main.py
 
     - name: Execute Automated PyTest Suite

@@ -212,16 +212,16 @@ class FinOpsAgent:
             requires_human = False
             hard_deny = False
 
-            # Rule 1: High Dollar Limit Cap ($10,000 Auto-Approval Ceiling & Cumulative User Daily Total)
-            auto_limit = vendor_info.get("auto_approval_limit", 10000.0)
+            # Rule 1: User / Account Spending Limit Cap ($10,000 Default / User Credit Limit)
+            user_limit = float(input_dict.get("proposed_credit_limit") or vendor_info.get("auto_approval_limit", 10000.0))
             cumulative_today = self.tool_check_cumulative_daily_spending(raw_vendor, amount, user_id)
 
-            if amount > auto_limit:
+            if amount > user_limit:
                 requires_human = True
-                policy_findings.append(f"Single invoice amount ${amount:,.2f} exceeds auto-approval limit of ${auto_limit:,.2f}")
-            elif cumulative_today > auto_limit and auto_limit > 0:
+                policy_findings.append(f"Single invoice amount ${amount:,.2f} exceeds user '{user_id}' assigned limit of ${user_limit:,.2f}")
+            elif cumulative_today > user_limit and user_limit > 0:
                 requires_human = True
-                policy_findings.append(f"Cumulative daily spending for user '{user_id}' to vendor '{raw_vendor}' (${cumulative_today:,.2f}) exceeds limit of ${auto_limit:,.2f}")
+                policy_findings.append(f"Cumulative daily spending for user '{user_id}' (${cumulative_today:,.2f}) exceeds daily limit of ${user_limit:,.2f}")
 
             # Rule 2: Unapproved Vendor Policy
             if vendor_info.get("status") == "UNAPPROVED":

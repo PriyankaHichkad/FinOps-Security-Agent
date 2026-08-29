@@ -1,0 +1,158 @@
+[
+  {
+    "record_index": 0,
+    "timestamp": "2026-08-28T00:00:00Z",
+    "event_id": "GENESIS_BLOCK",
+    "verdict": "INITIALIZED",
+    "evidence": "FinOps-Security-Agent Cryptographic Audit Ledger Initialized",
+    "prev_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "current_hash": "bca846c33f98b0461e04c8832192f3d41b3add579a0dd1dc663562368fbc6c1b"
+  },
+  {
+    "record_index": 1,
+    "timestamp": "2026-08-29T21:20:29.818609",
+    "event_id": "EVT-0001",
+    "verdict": "ROUTE_TO_HUMAN_REVIEW",
+    "inputs": {
+      "vendor_name": "Acme Corp",
+      "amount": 12500.0,
+      "applicant_name": ""
+    },
+    "evidence": {
+      "ml_fraud_score": 0.0131,
+      "ml_risk_tier": "LOW",
+      "extraction_confidence": 1.0,
+      "vendor_status": "APPROVED",
+      "po_matched": true,
+      "ueba_score": 0.0,
+      "injection_status": "SAFE",
+      "rationales": [
+        "Single invoice amount $12,500.00 exceeds user 'USR-9042' assigned limit of $2,000.00"
+      ]
+    },
+    "prev_hash": "bca846c33f98b0461e04c8832192f3d41b3add579a0dd1dc663562368fbc6c1b",
+    "current_hash": "b4cb18d024128b8266ea4c50f2318e0e763deeb0f384e1b15b6222b0e3291994"
+  },
+  {
+    "record_index": 2,
+    "timestamp": "2026-08-29T21:20:43.732411",
+    "event_id": "EVT-0002",
+    "verdict": "ROUTE_TO_HUMAN_REVIEW",
+    "inputs": {
+      "vendor_name": "TechData Inc",
+      "amount": 2500.0,
+      "applicant_name": ""
+    },
+    "evidence": {
+      "ml_fraud_score": 0.0131,
+      "ml_risk_tier": "LOW",
+      "extraction_confidence": 1.0,
+      "vendor_status": "APPROVED",
+      "po_matched": true,
+      "ueba_score": 0.0,
+      "injection_status": "SAFE",
+      "rationales": [
+        "Single invoice amount $2,500.00 exceeds user 'USR-9042' assigned limit of $2,000.00"
+      ]
+    },
+    "prev_hash": "b4cb18d024128b8266ea4c50f2318e0e763deeb0f384e1b15b6222b0e3291994",
+    "current_hash": "f9bea3a55f9eca8041b3fae34cc2282062dbbbc908110984f736bce0b02f605e"
+  },
+  {
+    "record_index": 3,
+    "timestamp": "2026-08-29T21:20:59.073807",
+    "event_id": "EVT-0003",
+    "verdict": "AUTO_APPROVE",
+    "inputs": {
+      "vendor_name": "Global Logistics LLC",
+      "amount": 1500.0,
+      "applicant_name": ""
+    },
+    "evidence": {
+      "ml_fraud_score": 0.0131,
+      "ml_risk_tier": "LOW",
+      "extraction_confidence": 1.0,
+      "vendor_status": "APPROVED",
+      "po_matched": true,
+      "ueba_score": 0.0,
+      "injection_status": "SAFE",
+      "rationales": []
+    },
+    "prev_hash": "f9bea3a55f9eca8041b3fae34cc2282062dbbbc908110984f736bce0b02f605e",
+    "current_hash": "f4f6acb3e1e648e794eb24c636f2e74bf44b9b9f0d99a46363e90eac5ab6338c"
+  },
+  {
+    "record_index": 4,
+    "timestamp": "2026-08-29T21:30:34.555381",
+    "event_id": "TEST-APPROVE-01",
+    "verdict": "AUTO_APPROVE",
+    "inputs": {
+      "vendor_name": "Acme Corp",
+      "amount": 1500.0,
+      "applicant_name": ""
+    },
+    "evidence": {
+      "ml_fraud_score": 0.0008,
+      "ml_risk_tier": "LOW",
+      "extraction_confidence": 1.0,
+      "vendor_status": "APPROVED",
+      "po_matched": true,
+      "ueba_score": 0.0,
+      "injection_status": "SAFE",
+      "rationales": []
+    },
+    "prev_hash": "f4f6acb3e1e648e794eb24c636f2e74bf44b9b9f0d99a46363e90eac5ab6338c",
+    "current_hash": "7041195726264439ee8a92569763349aa01f18ce2f42c87883d74f739bc87ec6"
+  },
+  {
+    "record_index": 5,
+    "timestamp": "2026-08-29T21:30:34.559827",
+    "event_id": "TEST-ROUTE-01",
+    "verdict": "ROUTE_TO_HUMAN_REVIEW",
+    "inputs": {
+      "vendor_name": "Acme Corp",
+      "amount": 15000.0,
+      "applicant_name": ""
+    },
+    "evidence": {
+      "ml_fraud_score": 0.0009,
+      "ml_risk_tier": "LOW",
+      "extraction_confidence": 1.0,
+      "vendor_status": "APPROVED",
+      "po_matched": true,
+      "ueba_score": 0.0,
+      "injection_status": "SAFE",
+      "rationales": [
+        "Single invoice amount $15,000.00 exceeds user 'bmarley@gmail.com' assigned limit of $10,000.00"
+      ]
+    },
+    "prev_hash": "7041195726264439ee8a92569763349aa01f18ce2f42c87883d74f739bc87ec6",
+    "current_hash": "fcd67207c290f0a4fff120ff7d8083964c8ea867d51fd6dc2fb0aea4074970fe"
+  },
+  {
+    "record_index": 6,
+    "timestamp": "2026-08-29T21:30:34.564016",
+    "event_id": "TEST-BLOCK-01",
+    "verdict": "AUTO_BLOCK",
+    "inputs": {
+      "vendor_name": "Acme Corp",
+      "amount": 500.0,
+      "applicant_name": ""
+    },
+    "evidence": {
+      "ml_fraud_score": 0.0011,
+      "ml_risk_tier": "LOW",
+      "extraction_confidence": 0.85,
+      "vendor_status": "APPROVED",
+      "po_matched": false,
+      "ueba_score": 0.0,
+      "injection_status": "UNSAFE",
+      "rationales": [
+        "Prompt injection pattern detected: 'system\\s+prompt'",
+        "Prompt injection pattern detected: 'override\\s+verdict'"
+      ]
+    },
+    "prev_hash": "fcd67207c290f0a4fff120ff7d8083964c8ea867d51fd6dc2fb0aea4074970fe",
+    "current_hash": "ea36d922e830f603462744ff97b8dc014a313429febc4c67a46a1e99bddb2f13"
+  }
+]

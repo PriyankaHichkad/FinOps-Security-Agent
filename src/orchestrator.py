@@ -124,10 +124,10 @@ class DecisionOrchestrator:
             sec_human = security_res["requires_review"]
             confidence = finops_res["extraction_confidence"]
 
-            if fraud_proba >= 0.99 or finops_hard_deny or sec_hard_block:
+            if fraud_proba >= 0.85 or finops_hard_deny or sec_hard_block:
                 final_verdict = "AUTO_BLOCK"
                 risk_level = "CRITICAL_RISK"
-            elif finops_human or sec_human or fraud_proba >= 0.65 or confidence < 0.85:
+            elif finops_human or sec_human or fraud_proba >= 0.50 or confidence < 0.85:
                 final_verdict = "ROUTE_TO_HUMAN_REVIEW"
                 risk_level = "HIGH_IMPACT_REVIEW"
             else:

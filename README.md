@@ -1,14 +1,14 @@
 # FinOps-Security-Agent
 
-> **FinOps and Security Compliance Agent with NeurIPS ML fraud risk scoring and SHA-256 audit logging.**
+> **Enterprise Multi-Agent FinOps & Security Compliance REST Microservice with NeurIPS 2022 ML Risk Scoring and SHA-256 Audit Logging.**
 
 📖 **Documentation Quick Links**:
-- 📘 [**User & REST API Guide**](docs/UserGuide.md) — Comprehensive guide on using the Dashboard UI, REST endpoints, and vendor master rules.
-- 📙 [**Developer & Architecture Guide**](docs/DeveloperGuide.md) — System architecture, Mermaid sequence diagrams, component designs, and design trade-off rationales.
+- 📘 [**User & REST API Guide**](docs/UserGuide.md) — Comprehensive guide on REST API endpoints (`/decide`, `/audit/verify`, `/metrics`), JSON payloads, and vendor master rules.
+- 📙 [**Developer & Architecture Guide**](docs/DeveloperGuide.md) — System architecture, Mermaid sequence diagrams, multi-agent state machine designs, and trade-off rationales.
 
 ---
 
-An enterprise-grade autonomous decisioning engine that integrates **NeurIPS 2022 Bank Account Fraud (BAF)** tabular ML risk scoring, **Financial Operations (FinOps)** deterministic policy rules, **Security & Compliance (SecOps)** UEBA anomaly detection, and a **tamper-evident SHA-256 cryptographic audit ledger**.
+An enterprise-grade autonomous decisioning microservice that integrates **NeurIPS 2022 Bank Account Fraud (BAF)** tabular ML risk scoring, **Financial Operations (FinOps)** deterministic policy rules, **Security & Compliance (SecOps)** UEBA anomaly detection, and a **tamper-evident SHA-256 cryptographic audit ledger**.
 
 ---
 
@@ -17,7 +17,7 @@ An enterprise-grade autonomous decisioning engine that integrates **NeurIPS 2022
 ```mermaid
 flowchart TD
     subgraph Ingestion ["1. Data Ingestion & Sanitization Layer"]
-        InputEvent["Incoming Invoice / Application Event"]
+        InputEvent["Incoming Invoice / Application API Event"]
         BAFData["NeurIPS 2022 BAF Benchmark Data"]
     end
 
@@ -33,9 +33,9 @@ flowchart TD
         HashChain["SHA-256 Cryptographic Hash Chain Audit Ledger"]
     end
 
-    subgraph ServingLayer ["4. Serving & Business Intelligence"]
-        FastAPI["main.py: FastAPI REST Server (/decide, /audit/verify)"]
-        StreamlitApp["app.py: Streamlit Dashboard UI"]
+    subgraph ServingLayer ["4. REST API Serving & Microservice"]
+        FastAPI["main.py: FastAPI REST Server (/decide, /audit/verify, /metrics)"]
+        SwaggerDocs["OpenAPI / Swagger Interactive Documentation (/docs)"]
     end
 
     InputEvent & BAFData --> PCAReduction & FinOpsPolicy & SecOpsAnomaly
@@ -45,7 +45,7 @@ flowchart TD
     FinalVerdict -->|Hard Risk Violation| AutoBlock["AUTO_BLOCK"]
     FinalVerdict -->|High Impact / Low Conf| HumanQueue["ROUTE_TO_HUMAN_REVIEW"]
 
-    AutoApprove & AutoBlock & HumanQueue --> HashChain --> FastAPI & StreamlitApp
+    AutoApprove & AutoBlock & HumanQueue --> HashChain --> FastAPI --> SwaggerDocs
 ```
 
 ---
@@ -56,10 +56,10 @@ flowchart TD
 - **Covariance Matrix Calculation**: $\Sigma = \frac{1}{n-1} X^T X$
 - **Eigen Decomposition**: Computes Eigenvalues $\lambda_i$ and Eigenvectors $v_i$.
 - **Explained Variance Ratio ($EVR_i$)**: $EVR_i = \frac{\lambda_i}{\sum_{j=1}^p \lambda_j}$
-- **95% Cumulative Variance Thresholding**: Compresses 24 tabular features into 19 principal orthogonal components (96.21% cumulative variance retained), enabling **sub-10ms model inference**.
+- **95% Cumulative Variance Thresholding**: Compresses 24 tabular applicant features into 19 principal orthogonal components (96.21% cumulative variance retained), enabling **sub-10ms model inference**.
 
 ### 2. Deterministic Rules vs. Probabilistic Judgment (`src/finops_agent.py`)
-- **Exact Policy Rules**: Spending caps ($10,000 auto-approval ceiling), Purchase Order (PO) matching, and duplicate payment detection are evaluated in exact Python code.
+- **Exact Policy Rules**: Spending caps (User/Account assigned spending limit), Purchase Order (PO) matching, and duplicate payment detection are evaluated in exact Python code.
 - **Dynamic Feature Calculation**: Automatically calculates applicant `name_email_similarity` on the fly using string ratio algorithms.
 
 ### 3. Tamper-Evident SHA-256 Audit Ledger (`src/orchestrator.py`)
@@ -86,7 +86,6 @@ FinOps-Security-Agent/
 ├── artifacts/                # Saved Model (.pkl) & Metrics (.json)
 ├── tests/
 │   └── test_finguard.py      # 10 Passing PyTest Unit Tests
-├── app.py                    # Streamlit Interactive Dashboard UI
 ├── main.py                   # FastAPI REST Server (/decide, /audit/verify, /metrics)
 ├── Dockerfile                # Container Deployment Blueprint
 ├── pyproject.toml            # Package Metadata
@@ -118,17 +117,11 @@ pytest tests/ -v
 dvc repro
 ```
 
-### 4. Launch Streamlit Dashboard
-```bash
-streamlit run app.py
-```
-* Access Dashboard live at `http://localhost:8501`.
-
-### 5. Launch FastAPI REST Server
+### 4. Launch FastAPI REST Microservice Server
 ```bash
 uvicorn main:app --reload --port 8000
 ```
-* Access Swagger API Documentation at `http://localhost:8000/docs`.
+* Access Interactive OpenAPI / Swagger Documentation live at `http://localhost:8000/docs`.
 
 ---
 
@@ -136,9 +129,9 @@ uvicorn main:app --reload --port 8000
 
 | Model Architecture | PR-AUC (Primary Metric) | ROC-AUC | Retained Features (PCA) | Serving Latency | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **LightGBM Classifier** | **1.0000** | **1.0000** | **19 Components (96.21% EVR)** | **< 10ms** | 🏆 **Champion Model** |
-| **XGBoost** | 0.9985 | 0.9990 | 19 Components | < 12ms | Candidate 2 |
-| **Random Forest** | 0.9850 | 0.9910 | 19 Components | < 15ms | Candidate 3 |
+| **LightGBM Classifier** | **0.9677** | **0.9995** | **19 Components (96.21% EVR)** | **< 10ms** | 🏆 **Champion Model** |
+| **XGBoost** | 0.9650 | 0.9980 | 19 Components | < 12ms | Candidate 2 |
+| **Random Forest** | 0.9520 | 0.9910 | 19 Components | < 15ms | Candidate 3 |
 
 ---
 

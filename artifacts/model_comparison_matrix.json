@@ -1,0 +1,29 @@
+[
+  {
+    "model_name": "LightGBM",
+    "pr_auc": 0.9594,
+    "roc_auc": 0.9288,
+    "precision": 0.8871,
+    "recall": 0.873,
+    "f1_score": 0.88,
+    "status": "\ud83c\udfc6 Champion Model"
+  },
+  {
+    "model_name": "Random Forest",
+    "pr_auc": 0.9648,
+    "roc_auc": 0.9334,
+    "precision": 0.8934,
+    "recall": 0.8651,
+    "f1_score": 0.879,
+    "status": "\ud83c\udfc6 Champion Model"
+  },
+  {
+    "model_name": "Logistic Regression",
+    "pr_auc": 0.9677,
+    "roc_auc": 0.9466,
+    "precision": 0.9076,
+    "recall": 0.8571,
+    "f1_score": 0.8816,
+    "status": "\ud83c\udfc6 Champion Model"
+  }
+]
