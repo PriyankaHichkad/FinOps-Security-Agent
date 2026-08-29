@@ -14,6 +14,8 @@ data/BAF_NeurIPS_2022.csv
 artifacts/*.pkl
 artifacts/*.xlsx
 *.log
+mlruns/
+mlflow.db
 
 # IDE & OS
 .DS_Store

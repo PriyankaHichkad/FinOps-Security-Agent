@@ -179,14 +179,17 @@ class MLEngine:
                 except Exception as e_exp:
                     logger.warning(f"MLflow experiment init warning: {e_exp}")
 
+            # Calculate dynamic class imbalance weight ratio
+            pos_weight = (len(y_train) - sum(y_train)) / max(sum(y_train), 1)
+
             candidates = []
             if HAS_LGBM and LGBMClassifier is not None:
-                candidates.append(("LightGBM", LGBMClassifier(n_estimators=100, learning_rate=0.05, num_leaves=31, random_state=42, verbosity=-1)))
+                candidates.append(("LightGBM", LGBMClassifier(n_estimators=100, learning_rate=0.05, num_leaves=31, scale_pos_weight=pos_weight, random_state=42, verbosity=-1)))
             if HAS_XGB and XGBClassifier is not None:
-                candidates.append(("XGBoost", XGBClassifier(n_estimators=100, learning_rate=0.05, max_depth=6, random_state=42, eval_metric="logloss")))
-            candidates.append(("Random Forest", RandomForestClassifier(n_estimators=100, max_depth=10, random_state=42)))
-            candidates.append(("Logistic Regression", LogisticRegression(max_iter=1000, random_state=42)))
-            candidates.append(("Support Vector Machine (SVM)", CalibratedClassifierCV(LinearSVC(dual=False, random_state=42))))
+                candidates.append(("XGBoost", XGBClassifier(n_estimators=100, learning_rate=0.05, max_depth=6, scale_pos_weight=pos_weight, random_state=42, eval_metric="logloss")))
+            candidates.append(("Random Forest", RandomForestClassifier(n_estimators=100, max_depth=10, class_weight="balanced", random_state=42)))
+            candidates.append(("Logistic Regression", LogisticRegression(max_iter=1000, class_weight="balanced", random_state=42)))
+            candidates.append(("Support Vector Machine (SVM)", CalibratedClassifierCV(LinearSVC(dual=False, class_weight="balanced", random_state=42))))
 
             self.comparison_matrix = []
             best_pr_auc = -1.0
