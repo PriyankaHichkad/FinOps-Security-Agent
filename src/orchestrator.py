@@ -106,9 +106,12 @@ class DecisionOrchestrator:
                 final_verdict = "AUTO_APPROVE"
                 risk_level = "LOW_RISK"
                 # Record successful payment in FinOps ledger
+                user_identifier = input_dict.get("actor_id") or input_dict.get("user_id") or input_dict.get("email") or input_dict.get("applicant_name") or "GLOBAL_USER"
                 finops_agent.record_transaction_in_ledger(
                     finops_res["vendor_name"],
-                    finops_res["sanitized_amount"]
+                    finops_res["sanitized_amount"],
+                    finops_res.get("po_number", "N/A"),
+                    user_identifier
                 )
 
             # Compile evidence summary

@@ -139,17 +139,30 @@ class FinOpsAgent:
             return {"po_matched": True, "reason": f"Matched Purchase Order {po_clean}"}
         return {"po_matched": False, "reason": f"Invalid Purchase Order format: {po_clean}"}
 
-    def tool_check_duplicate_ledger(self, vendor_name: str, amount: float, date_str: str = "TODAY") -> bool:
+    def tool_check_cumulative_daily_spending(self, vendor_name: str, amount: float, user_id: str = "GLOBAL_USER", date_str: str = "TODAY") -> float:
+        """Tool call: Tracks cumulative daily spending total per user/client paying a vendor."""
+        user_clean = str(user_id).strip().lower() if user_id else "global_user"
+        key = (user_clean, str(vendor_name).strip().lower(), str(date_str).strip())
+        current_total = self.daily_spending_ledger.get(key, 0.0)
+        return current_total + amount
+
+    def tool_check_duplicate_ledger(self, vendor_name: str, amount: float, po_number: str = "N/A", date_str: str = "TODAY") -> bool:
         """Tool call: Checks processed ledger to prevent duplicate double payments."""
-        key = (str(vendor_name).strip().lower(), round(float(amount), 2), str(date_str).strip())
+        po_clean = str(po_number).strip().upper() if po_number else "N/A"
+        key = (str(vendor_name).strip().lower(), round(float(amount), 2), po_clean, str(date_str).strip())
         if key in self.processed_ledger:
             return True
         return False
 
-    def record_transaction_in_ledger(self, vendor_name: str, amount: float, date_str: str = "TODAY"):
-        """Records paid transaction in historical ledger."""
-        key = (str(vendor_name).strip().lower(), round(float(amount), 2), str(date_str).strip())
+    def record_transaction_in_ledger(self, vendor_name: str, amount: float, po_number: str = "N/A", user_id: str = "GLOBAL_USER", date_str: str = "TODAY"):
+        """Records paid transaction in historical ledger and updates cumulative daily spending per user."""
+        po_clean = str(po_number).strip().upper() if po_number else "N/A"
+        key = (str(vendor_name).strip().lower(), round(float(amount), 2), po_clean, str(date_str).strip())
         self.processed_ledger.add(key)
+
+        user_clean = str(user_id).strip().lower() if user_id else "global_user"
+        daily_key = (user_clean, str(vendor_name).strip().lower(), str(date_str).strip())
+        self.daily_spending_ledger[daily_key] = self.daily_spending_ledger.get(daily_key, 0.0) + amount
 
     def evaluate_finops_policies(self, input_dict: dict) -> dict:
         """
@@ -168,6 +181,7 @@ class FinOpsAgent:
             po_number = input_dict.get("po_number") or input_dict.get("po_id") or input_dict.get("po") or "N/A"
             applicant_name = input_dict.get("applicant_name") or input_dict.get("name") or input_dict.get("user_name") or ""
             email = input_dict.get("email") or input_dict.get("email_address") or ""
+            user_id = input_dict.get("actor_id") or input_dict.get("user_id") or email or applicant_name or "GLOBAL_USER"
 
             # Dynamic similarity calculation
             if "name_email_similarity" in input_dict and input_dict["name_email_similarity"] is not None:
@@ -185,18 +199,23 @@ class FinOpsAgent:
             # 2. Tool Executions
             vendor_info = self.tool_query_vendor_master(raw_vendor)
             po_info = self.tool_reconcile_po(po_number, amount)
-            is_duplicate = self.tool_check_duplicate_ledger(raw_vendor, amount)
+            is_duplicate = self.tool_check_duplicate_ledger(raw_vendor, amount, po_number)
 
             # 3. Deterministic Policy Rules
             policy_findings = []
             requires_human = False
             hard_deny = False
 
-            # Rule 1: High Dollar Limit Cap ($10,000 Auto-Approval Ceiling)
+            # Rule 1: High Dollar Limit Cap ($10,000 Auto-Approval Ceiling & Cumulative User Daily Total)
             auto_limit = vendor_info.get("auto_approval_limit", 10000.0)
+            cumulative_today = self.tool_check_cumulative_daily_spending(raw_vendor, amount, user_id)
+
             if amount > auto_limit:
                 requires_human = True
-                policy_findings.append(f"Invoice amount ${amount:,.2f} exceeds auto-approval limit of ${auto_limit:,.2f}")
+                policy_findings.append(f"Single invoice amount ${amount:,.2f} exceeds auto-approval limit of ${auto_limit:,.2f}")
+            elif cumulative_today > auto_limit and auto_limit > 0:
+                requires_human = True
+                policy_findings.append(f"Cumulative daily spending for user '{user_id}' to vendor '{raw_vendor}' (${cumulative_today:,.2f}) exceeds limit of ${auto_limit:,.2f}")
 
             # Rule 2: Unapproved Vendor Policy
             if vendor_info.get("status") == "UNAPPROVED":
