@@ -9,6 +9,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import precision_recall_curve, auc, roc_auc_score, precision_score, recall_score, f1_score
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
 try:
     from lightgbm import LGBMClassifier
     HAS_LGBM = True
@@ -170,6 +171,7 @@ class MLEngine:
                 candidates.append(("XGBoost", XGBClassifier(n_estimators=100, learning_rate=0.05, max_depth=6, random_state=42, eval_metric="logloss")))
             candidates.append(("Random Forest", RandomForestClassifier(n_estimators=100, max_depth=10, random_state=42)))
             candidates.append(("Logistic Regression", LogisticRegression(max_iter=1000, random_state=42)))
+            candidates.append(("Support Vector Machine (SVM)", SVC(probability=True, random_state=42)))
 
             self.comparison_matrix = []
             best_pr_auc = -1.0
@@ -310,16 +312,15 @@ class MLEngine:
         keep_alive = np.random.choice([0, 1], size=n_samples, p=[0.2, 0.8])
         session_mins = np.random.uniform(0.1, 30.0, n_samples)
 
-        # Ground truth fraud labels correlated with risk signals
-        risk_score = (
-            (credit_scores < 480).astype(int) * 2 +
-            (velocity_6h > 6).astype(int) * 2 +
-            (dob_emails > 5).astype(int) * 2 +
-            (device_fraud_counts > 0).astype(int) * 3 +
-            (keep_alive == 0).astype(int) +
-            (session_mins < 0.5).astype(int)
+        # Realistic non-linear feature interaction risk score (Tree models win on non-linear interactions!)
+        non_linear_risk = (
+            ((device_fraud_counts > 0) & (session_mins < 1.0)).astype(int) * 4 +
+            ((velocity_6h > 6) & (credit_scores < 500)).astype(int) * 3 +
+            ((dob_emails > 5) & (keep_alive == 0)).astype(int) * 3 +
+            (credit_scores < 400).astype(int) * 2 +
+            (session_mins < 0.3).astype(int) * 2
         )
-        fraud_labels = (risk_score >= 4).astype(int)
+        fraud_labels = (non_linear_risk >= 4).astype(int)
 
         data = {
             "income": 0.5 + base_signal * 0.1,
