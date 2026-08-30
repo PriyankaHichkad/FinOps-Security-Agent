@@ -25,12 +25,21 @@ def main():
     print("\n2. Retraining MLflow Experimentation Pipeline...")
     engine.train_pipeline()
 
-    print("\n" + "=" * 70)
-    print("📊 MLFLOW EXPERIMENT COMPARISON MATRIX")
-    print("=" * 70)
+    print("\n" + "=" * 85)
+    print("📊 NEURIPS 2022 BENCHMARK EXPERIMENT MATRIX (OOT TEMPORAL VALIDATION)")
+    print("=" * 85)
     for m in engine.comparison_matrix:
         run_name = m.get("experiment_run", m.get("model_name"))
-        print(f"Run: {run_name:<36} | PR-AUC: {m['pr_auc']:<6} | ROC-AUC: {m['roc_auc']:<6} | Lift: {m.get('predictive_lift', 'N/A'):<6} | Status: {m['status']}")
+        rec_5 = m.get("recall_at_5_fpr", "N/A")
+        fair_ratio = m.get("fairness_fpr_ratio", "N/A")
+        print(f"Run: {run_name:<36} | Recall@5%FPR: {rec_5:<6} | PR-AUC: {m['pr_auc']:<6} | ROC-AUC: {m['roc_auc']:<6} | Age Fairness Ratio: {fair_ratio:<5} | Status: {m['status']}")
+
+    if hasattr(engine, "variant_results") and engine.variant_results:
+        print("\n" + "=" * 85)
+        print("🔬 NEURIPS 2022 MULTI-VARIANT CROSS-DOMAIN STRESS TEST (VARIANTS I - V)")
+        print("=" * 85)
+        for vr in engine.variant_results:
+            print(f"Variant: {vr['variant']:<16} | Recall @ 5% FPR: {vr['recall_at_5_fpr']:<6} | PR-AUC: {vr['pr_auc']:<6} | ROC-AUC: {vr['roc_auc']:<6}")
 
     print("\n" + "=" * 70)
     print("🏆 PRODUCTION CHAMPION MODEL HYPERPARAMETERS")

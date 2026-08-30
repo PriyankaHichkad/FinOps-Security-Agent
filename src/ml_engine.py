@@ -6,7 +6,7 @@ import pandas as pd
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import RobustScaler
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import precision_recall_curve, auc, roc_auc_score, precision_score, recall_score, f1_score
+from sklearn.metrics import precision_recall_curve, auc, roc_auc_score, precision_score, recall_score, f1_score, roc_curve
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import LinearSVC
@@ -124,12 +124,20 @@ class MLEngine:
                 )
 
             existing_cols = [col for col in FEATURE_COLUMNS if col in df.columns]
-            X = df[existing_cols].copy()
-            y = df["fraud_bool"] if "fraud_bool" in df.columns else np.random.choice([0, 1], size=len(df), p=[0.95, 0.05])
+            X_all = df[existing_cols].copy().fillna(df[existing_cols].median(numeric_only=True))
+            y_all = df["fraud_bool"] if "fraud_bool" in df.columns else np.random.choice([0, 1], size=len(df), p=[0.95, 0.05])
 
-            X = X.fillna(X.median(numeric_only=True))
-
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+            # NeurIPS 2022 Standard: Out-of-Time (OOT) Temporal Split (Months 0-5 for Train, Months 6-7 for Test)
+            if "month" in df.columns and len(df[df["month"] > 5]) > 0:
+                logger.info("Applying NeurIPS 2022 Temporal Out-of-Time Split (Months 0-5 Train, Months 6-7 Test)...")
+                train_mask = df["month"] <= 5
+                test_mask = df["month"] > 5
+                X_train, y_train = X_all[train_mask], y_all[train_mask]
+                X_test, y_test = X_all[test_mask], y_all[test_mask]
+                self.test_df_raw = df[test_mask].copy()
+            else:
+                X_train, X_test, y_train, y_test = train_test_split(X_all, y_all, test_size=0.2, random_state=42, stratify=y_all)
+                self.test_df_raw = df.iloc[X_test.index].copy() if hasattr(X_test, "index") else df.copy()
 
             # Robust Scaling
             self.scaler = RobustScaler()
@@ -220,6 +228,24 @@ class MLEngine:
                         rec = float(recall_score(y_test, y_pred, zero_division=0))
                         f1 = float(f1_score(y_test, y_pred, zero_division=0))
 
+                        # NeurIPS 2022 Primary Competition Metric: Recall @ 5% FPR
+                        fpr_arr, tpr_arr, thresh_arr = roc_curve(y_test, y_proba)
+                        idx_5 = np.argmin(np.abs(fpr_arr - 0.05))
+                        recall_at_5_fpr = float(tpr_arr[idx_5])
+                        thresh_at_5_fpr = float(thresh_arr[idx_5])
+
+                        # NeurIPS 2022 Fairness Metric: Predictive Equality (FPR Ratio Age > 50 vs Age <= 50)
+                        fairness_disparity = 1.0
+                        if hasattr(self, "test_df_raw") and "customer_age" in self.test_df_raw.columns:
+                            age_vals = self.test_df_raw["customer_age"].values
+                            pred_5 = (y_proba >= thresh_at_5_fpr).astype(int)
+                            y_test_arr = np.array(y_test)
+                            mask_sr = (age_vals > 50) & (y_test_arr == 0)
+                            mask_yr = (age_vals <= 50) & (y_test_arr == 0)
+                            fpr_sr = float(np.mean(pred_5[mask_sr] == 1)) if np.sum(mask_sr) > 0 else 0.05
+                            fpr_yr = float(np.mean(pred_5[mask_yr] == 1)) if np.sum(mask_yr) > 0 else 0.05
+                            fairness_disparity = round(fpr_sr / max(fpr_yr, 1e-6), 2)
+
                         # Baseline random prevalence floor is 0.0110
                         lift = round(pr_auc_val / 0.0110, 2)
 
@@ -236,6 +262,8 @@ class MLEngine:
                             "model_name": model_name,
                             "pr_auc": round(pr_auc_val, 4),
                             "roc_auc": round(roc_auc_val, 4),
+                            "recall_at_5_fpr": round(recall_at_5_fpr, 4),
+                            "fairness_fpr_ratio": fairness_disparity,
                             "precision": round(prec, 4),
                             "recall": round(rec, 4),
                             "f1_score": round(f1, 4),
@@ -258,6 +286,8 @@ class MLEngine:
                                                 mlflow.log_param(p_k, p_v)
                                     mlflow.log_metric("pr_auc", pr_auc_val)
                                     mlflow.log_metric("roc_auc", roc_auc_val)
+                                    mlflow.log_metric("recall_at_5_percent_fpr", recall_at_5_fpr)
+                                    mlflow.log_metric("fairness_fpr_disparity_ratio", fairness_disparity)
                                     mlflow.log_metric("precision", prec)
                                     mlflow.log_metric("recall", rec)
                                     mlflow.log_metric("f1_score", f1)
@@ -316,6 +346,7 @@ class MLEngine:
                     logger.warning(f"MLflow champion logging notice: {e_champ}")
 
             logger.info(f"MLflow Training Complete. Champion PR-AUC: {best_pr_auc:.4f}")
+            self.evaluate_all_variants()
 
         except Exception as e:
             logger.error(f"Training pipeline notice: {e}")
@@ -335,6 +366,66 @@ class MLEngine:
                 }
             except Exception as e2:
                 logger.error(f"Emergency fallback setup failed: {e2}")
+
+    def evaluate_all_variants(self):
+        """Evaluates Champion Model across all 6 NeurIPS 2022 dataset variants in data/BAF_NeurIPS_2022_dataset/."""
+        dataset_dir = os.path.join(BASE_DIR, "data", "BAF_NeurIPS_2022_dataset")
+        if not os.path.exists(dataset_dir):
+            return []
+
+        variant_files = sorted([f for f in os.listdir(dataset_dir) if f.endswith(".csv")])
+        variant_results = []
+        logger.info("Executing NeurIPS 2022 Multi-Variant Cross-Domain Stress Test...")
+
+        for vfile in variant_files:
+            vpath = os.path.join(dataset_dir, vfile)
+            try:
+                vdf = pd.read_csv(vpath)
+                if len(vdf) > 50000:
+                    vdf = vdf.sample(n=50000, random_state=42)
+
+                existing_cols = [col for col in FEATURE_COLUMNS if col in vdf.columns]
+                X_v = vdf[existing_cols].copy().fillna(vdf[existing_cols].median(numeric_only=True))
+                y_v = vdf["fraud_bool"].values if "fraud_bool" in vdf.columns else np.zeros(len(vdf))
+
+                X_sc = self.scaler.transform(X_v)
+                X_pca = self.pca.transform(X_sc)
+
+                y_proba = self.model.predict_proba(X_pca)[:, 1]
+
+                fpr_arr, tpr_arr, thresh_arr = roc_curve(y_v, y_proba)
+                idx_5 = np.argmin(np.abs(fpr_arr - 0.05))
+                recall_5_fpr = float(tpr_arr[idx_5])
+
+                roc_val = float(roc_auc_score(y_v, y_proba))
+                p_curve, r_curve, _ = precision_recall_curve(y_v, y_proba)
+                pr_auc_val = float(auc(r_curve, p_curve))
+
+                variant_name = vfile.replace(".csv", "")
+                variant_results.append({
+                    "variant": variant_name,
+                    "recall_at_5_fpr": round(recall_5_fpr, 4),
+                    "pr_auc": round(pr_auc_val, 4),
+                    "roc_auc": round(roc_val, 4)
+                })
+
+                if HAS_MLFLOW and mlflow:
+                    try:
+                        mlflow.end_run()
+                        with mlflow.start_run(run_name=f"[Variant_Stress_Test] {variant_name}"):
+                            mlflow.log_param("variant_name", variant_name)
+                            mlflow.log_metric("recall_at_5_percent_fpr", recall_5_fpr)
+                            mlflow.log_metric("pr_auc", pr_auc_val)
+                            mlflow.log_metric("roc_auc", roc_val)
+                        mlflow.end_run()
+                    except Exception:
+                        pass
+
+            except Exception as e_v:
+                logger.warning(f"Error evaluating variant {vfile}: {e_v}")
+
+        self.variant_results = variant_results
+        return variant_results
 
     def _generate_synthetic_baf_data(self):
         """Generates synthetic NeurIPS 2022 dataset if CSV is missing."""
