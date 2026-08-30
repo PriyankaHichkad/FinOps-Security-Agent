@@ -27,10 +27,12 @@ except ImportError:
 
 try:
     from imblearn.over_sampling import SMOTE
+    from imblearn.under_sampling import RandomUnderSampler
     HAS_SMOTE = True
 except ImportError:
     HAS_SMOTE = False
     SMOTE = None
+    RandomUnderSampler = None
 
 try:
     import mlflow
@@ -160,16 +162,6 @@ class MLEngine:
                 "cumulative_variance_ratio": cum_evr
             }
 
-            # SMOTE Oversampling (Optional)
-            if HAS_SMOTE and SMOTE is not None:
-                try:
-                    smote = SMOTE(random_state=42)
-                    X_train_res, y_train_res = smote.fit_resample(X_train_pca, y_train)
-                except Exception:
-                    X_train_res, y_train_res = X_train_pca, y_train
-            else:
-                X_train_res, y_train_res = X_train_pca, y_train
-
             # MLflow Setup (Production SQLite Database Backend)
             if HAS_MLFLOW and mlflow:
                 try:
@@ -179,74 +171,103 @@ class MLEngine:
                 except Exception as e_exp:
                     logger.warning(f"MLflow experiment init warning: {e_exp}")
 
-            # Calculate dynamic class imbalance weight ratio
-            pos_weight = (len(y_train) - sum(y_train)) / max(sum(y_train), 1)
+            # Define the 4 Sampling Experiment Strategies discussed with the user
+            sampling_strategies = [
+                ("Baseline_Natural", "No Resampling (1.1% Imbalance)", None),
+                ("SMOTE_1to1", "SMOTE Oversampling (50/50 Equalized)", SMOTE(sampling_strategy=1.0, random_state=42) if HAS_SMOTE and SMOTE else None),
+                ("Random_Undersample", "Random Undersampling (1:1 Equalized)", RandomUnderSampler(sampling_strategy=1.0, random_state=42) if HAS_SMOTE and RandomUnderSampler else None),
+                ("Hybrid_1to3_Optimal", "Hybrid Sampling (1:3 Target Ratio - 25% Fraud)", SMOTE(sampling_strategy=0.333, random_state=42) if HAS_SMOTE and SMOTE else None)
+            ]
 
-            candidates = []
-            if HAS_LGBM and LGBMClassifier is not None:
-                candidates.append(("LightGBM", LGBMClassifier(n_estimators=100, learning_rate=0.05, num_leaves=31, scale_pos_weight=pos_weight, random_state=42, verbosity=-1)))
-            if HAS_XGB and XGBClassifier is not None:
-                candidates.append(("XGBoost", XGBClassifier(n_estimators=100, learning_rate=0.05, max_depth=6, scale_pos_weight=pos_weight, random_state=42, eval_metric="logloss")))
-            candidates.append(("Random Forest", RandomForestClassifier(n_estimators=100, max_depth=10, class_weight="balanced", random_state=42)))
-            candidates.append(("Logistic Regression", LogisticRegression(max_iter=1000, class_weight="balanced", random_state=42)))
-            candidates.append(("Support Vector Machine (SVM)", CalibratedClassifierCV(LinearSVC(dual=False, class_weight="balanced", random_state=42))))
+            pos_weight = (len(y_train) - sum(y_train)) / max(sum(y_train), 1)
 
             self.comparison_matrix = []
             best_pr_auc = -1.0
             champion_model = None
+            champion_strategy_name = ""
 
-            for name, model_inst in candidates:
-                try:
-                    model_inst.fit(X_train_res, y_train_res)
-                    y_proba = model_inst.predict_proba(X_test_pca)[:, 1]
-                    y_pred = (y_proba >= 0.50).astype(int)
+            for strategy_key, strategy_desc, sampler_inst in sampling_strategies:
+                # Apply sampling transformation
+                if sampler_inst is not None:
+                    try:
+                        X_train_res, y_train_res = sampler_inst.fit_resample(X_train_pca, y_train)
+                    except Exception as e_samp:
+                        logger.warning(f"Sampler {strategy_key} notice: {e_samp}. Falling back to unresampled data.")
+                        X_train_res, y_train_res = X_train_pca, y_train
+                else:
+                    X_train_res, y_train_res = X_train_pca, y_train
 
-                    precision_curve, recall_curve, _ = precision_recall_curve(y_test, y_proba)
-                    pr_auc_val = float(auc(recall_curve, precision_curve))
-                    roc_auc_val = float(roc_auc_score(y_test, y_proba))
-                    prec = float(precision_score(y_test, y_pred, zero_division=0))
-                    rec = float(recall_score(y_test, y_pred, zero_division=0))
-                    f1 = float(f1_score(y_test, y_pred, zero_division=0))
+                candidates = []
+                if HAS_LGBM and LGBMClassifier is not None:
+                    candidates.append(("LightGBM", LGBMClassifier(n_estimators=100, learning_rate=0.05, num_leaves=31, scale_pos_weight=pos_weight, random_state=42, verbosity=-1)))
+                if HAS_XGB and XGBClassifier is not None:
+                    candidates.append(("XGBoost", XGBClassifier(n_estimators=100, learning_rate=0.05, max_depth=6, scale_pos_weight=pos_weight, random_state=42, eval_metric="logloss")))
+                candidates.append(("Random Forest", RandomForestClassifier(n_estimators=100, max_depth=10, class_weight="balanced", random_state=42)))
+                candidates.append(("Logistic Regression", LogisticRegression(max_iter=1000, class_weight="balanced", random_state=42)))
+                candidates.append(("Support Vector Machine (SVM)", CalibratedClassifierCV(LinearSVC(dual=False, class_weight="balanced", random_state=42))))
 
-                    status = "Candidate"
-                    if pr_auc_val > best_pr_auc:
-                        best_pr_auc = pr_auc_val
-                        champion_model = model_inst
-                        status = "🏆 Champion Model"
+                for model_name, model_inst in candidates:
+                    run_label = f"[{strategy_key}] {model_name}"
+                    try:
+                        model_inst.fit(X_train_res, y_train_res)
+                        y_proba = model_inst.predict_proba(X_test_pca)[:, 1]
+                        y_pred = (y_proba >= 0.50).astype(int)
 
-                    self.comparison_matrix.append({
-                        "model_name": name,
-                        "pr_auc": round(pr_auc_val, 4),
-                        "roc_auc": round(roc_auc_val, 4),
-                        "precision": round(prec, 4),
-                        "recall": round(rec, 4),
-                        "f1_score": round(f1, 4),
-                        "status": status
-                    })
+                        precision_curve, recall_curve, _ = precision_recall_curve(y_test, y_proba)
+                        pr_auc_val = float(auc(recall_curve, precision_curve))
+                        roc_auc_val = float(roc_auc_score(y_test, y_proba))
+                        prec = float(precision_score(y_test, y_pred, zero_division=0))
+                        rec = float(recall_score(y_test, y_pred, zero_division=0))
+                        f1 = float(f1_score(y_test, y_pred, zero_division=0))
 
-                    # Safely log to MLflow without blocking execution
-                    if HAS_MLFLOW and mlflow:
-                        try:
-                            mlflow.end_run()
-                            with mlflow.start_run(run_name=f"Candidate_{name}"):
-                                mlflow.log_param("model_name", name)
-                                mlflow.log_param("pca_components", components_95)
-                                mlflow.log_param("smote_oversampling", True)
-                                if hasattr(model_inst, "get_params"):
-                                    for p_k, p_v in model_inst.get_params().items():
-                                        if isinstance(p_v, (int, float, str, bool)):
-                                            mlflow.log_param(p_k, p_v)
-                                mlflow.log_metric("pr_auc", pr_auc_val)
-                                mlflow.log_metric("roc_auc", roc_auc_val)
-                                mlflow.log_metric("precision", prec)
-                                mlflow.log_metric("recall", rec)
-                                mlflow.log_metric("f1_score", f1)
-                            mlflow.end_run()
-                        except Exception as e_mlflow:
-                            logger.warning(f"MLflow logging skipped for {name}: {e_mlflow}")
+                        # Baseline random prevalence floor is 0.0110
+                        lift = round(pr_auc_val / 0.0110, 2)
 
-                except Exception as e_cand:
-                    logger.error(f"Error training candidate {name}: {e_cand}")
+                        status = "Candidate"
+                        if pr_auc_val > best_pr_auc:
+                            best_pr_auc = pr_auc_val
+                            champion_model = model_inst
+                            champion_strategy_name = run_label
+                            status = "🏆 Champion Model"
+
+                        self.comparison_matrix.append({
+                            "experiment_run": run_label,
+                            "strategy": strategy_desc,
+                            "model_name": model_name,
+                            "pr_auc": round(pr_auc_val, 4),
+                            "roc_auc": round(roc_auc_val, 4),
+                            "precision": round(prec, 4),
+                            "recall": round(rec, 4),
+                            "f1_score": round(f1, 4),
+                            "predictive_lift": f"{lift}x",
+                            "status": status
+                        })
+
+                        # Safely log each run in MLflow
+                        if HAS_MLFLOW and mlflow:
+                            try:
+                                mlflow.end_run()
+                                with mlflow.start_run(run_name=run_label):
+                                    mlflow.log_param("sampling_strategy", strategy_key)
+                                    mlflow.log_param("sampling_description", strategy_desc)
+                                    mlflow.log_param("model_name", model_name)
+                                    mlflow.log_param("pca_components", components_95)
+                                    if hasattr(model_inst, "get_params"):
+                                        for p_k, p_v in model_inst.get_params().items():
+                                            if isinstance(p_v, (int, float, str, bool)):
+                                                mlflow.log_param(p_k, p_v)
+                                    mlflow.log_metric("pr_auc", pr_auc_val)
+                                    mlflow.log_metric("roc_auc", roc_auc_val)
+                                    mlflow.log_metric("precision", prec)
+                                    mlflow.log_metric("recall", rec)
+                                    mlflow.log_metric("f1_score", f1)
+                                    mlflow.log_metric("predictive_lift_over_random", lift)
+                                mlflow.end_run()
+                            except Exception as e_mlflow:
+                                logger.warning(f"MLflow logging skipped for {run_label}: {e_mlflow}")
+
+                    except Exception as e_cand:
+                        logger.error(f"Error training {run_label}: {e_cand}")
 
             if champion_model is not None:
                 self.model = champion_model

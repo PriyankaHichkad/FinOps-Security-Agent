@@ -28,8 +28,9 @@ def main():
     print("\n" + "=" * 70)
     print("📊 MLFLOW EXPERIMENT COMPARISON MATRIX")
     print("=" * 70)
-    for model in engine.comparison_matrix:
-        print(f"Model: {model['model_name']:<22} | PR-AUC: {model['pr_auc']:<6} | ROC-AUC: {model['roc_auc']:<6} | Status: {model['status']}")
+    for m in engine.comparison_matrix:
+        run_name = m.get("experiment_run", m.get("model_name"))
+        print(f"Run: {run_name:<36} | PR-AUC: {m['pr_auc']:<6} | ROC-AUC: {m['roc_auc']:<6} | Lift: {m.get('predictive_lift', 'N/A'):<6} | Status: {m['status']}")
 
     print("\n" + "=" * 70)
     print("🏆 PRODUCTION CHAMPION MODEL HYPERPARAMETERS")
