@@ -122,3 +122,13 @@ def test_sha256_audit_chain_verification():
     assert verification["is_valid"] is True
     assert verification["total_records"] > 0
     assert verification["status"] == "TAMPER_EVIDENT_VALIDATED"
+
+def test_financial_backtest_engine():
+    """Verify FinOps Backtest Financial Loss Simulator Engine execution."""
+    from src.backtest_engine import FinOpsBacktestEngine
+    bt_engine = FinOpsBacktestEngine(avg_fraud_loss=2500.0, false_positive_cost=25.0)
+    assert bt_engine.avg_fraud_loss == 2500.0
+    res = bt_engine.run_backtest(sample_size=50000)
+    assert "total_test_transactions" in res
+    assert "optimal_net_dollars_saved_usd" in res
+    assert isinstance(res["optimal_net_dollars_saved_usd"], (int, float))

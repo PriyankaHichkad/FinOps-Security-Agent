@@ -1,0 +1,210 @@
+{
+  "total_test_transactions": 10204,
+  "total_fraud_incidents": 143,
+  "unmitigated_baseline_exposure_usd": 357500.0,
+  "optimal_economic_threshold": 0.95,
+  "optimal_net_dollars_saved_usd": 150739.8,
+  "optimal_roi_percentage": 42.16,
+  "optimal_metrics": {
+    "threshold": 0.95,
+    "true_positives_caught": 118,
+    "false_positives_flagged": 5750,
+    "uncaught_fraud_fn": 25,
+    "gross_fraud_prevented_usd": 295000.0,
+    "false_alarm_investigation_cost_usd": 143750.0,
+    "net_dollars_saved_usd": 150739.8,
+    "roi_percentage": 42.16
+  },
+  "threshold_grid_simulation": [
+    {
+      "threshold": 0.05,
+      "true_positives_caught": 143,
+      "false_positives_flagged": 9931,
+      "uncaught_fraud_fn": 0,
+      "gross_fraud_prevented_usd": 357500.0,
+      "false_alarm_investigation_cost_usd": 248275.0,
+      "net_dollars_saved_usd": 108714.8,
+      "roi_percentage": 30.41
+    },
+    {
+      "threshold": 0.1,
+      "true_positives_caught": 143,
+      "false_positives_flagged": 9734,
+      "uncaught_fraud_fn": 0,
+      "gross_fraud_prevented_usd": 357500.0,
+      "false_alarm_investigation_cost_usd": 243350.0,
+      "net_dollars_saved_usd": 113639.8,
+      "roi_percentage": 31.79
+    },
+    {
+      "threshold": 0.15,
+      "true_positives_caught": 143,
+      "false_positives_flagged": 9599,
+      "uncaught_fraud_fn": 0,
+      "gross_fraud_prevented_usd": 357500.0,
+      "false_alarm_investigation_cost_usd": 239975.0,
+      "net_dollars_saved_usd": 117014.8,
+      "roi_percentage": 32.73
+    },
+    {
+      "threshold": 0.2,
+      "true_positives_caught": 143,
+      "false_positives_flagged": 9458,
+      "uncaught_fraud_fn": 0,
+      "gross_fraud_prevented_usd": 357500.0,
+      "false_alarm_investigation_cost_usd": 236450.0,
+      "net_dollars_saved_usd": 120539.8,
+      "roi_percentage": 33.72
+    },
+    {
+      "threshold": 0.25,
+      "true_positives_caught": 143,
+      "false_positives_flagged": 9329,
+      "uncaught_fraud_fn": 0,
+      "gross_fraud_prevented_usd": 357500.0,
+      "false_alarm_investigation_cost_usd": 233225.0,
+      "net_dollars_saved_usd": 123764.8,
+      "roi_percentage": 34.62
+    },
+    {
+      "threshold": 0.3,
+      "true_positives_caught": 143,
+      "false_positives_flagged": 9209,
+      "uncaught_fraud_fn": 0,
+      "gross_fraud_prevented_usd": 357500.0,
+      "false_alarm_investigation_cost_usd": 230225.0,
+      "net_dollars_saved_usd": 126764.8,
+      "roi_percentage": 35.46
+    },
+    {
+      "threshold": 0.35,
+      "true_positives_caught": 142,
+      "false_positives_flagged": 9087,
+      "uncaught_fraud_fn": 1,
+      "gross_fraud_prevented_usd": 355000.0,
+      "false_alarm_investigation_cost_usd": 227175.0,
+      "net_dollars_saved_usd": 127314.8,
+      "roi_percentage": 35.61
+    },
+    {
+      "threshold": 0.4,
+      "true_positives_caught": 140,
+      "false_positives_flagged": 8956,
+      "uncaught_fraud_fn": 3,
+      "gross_fraud_prevented_usd": 350000.0,
+      "false_alarm_investigation_cost_usd": 223900.0,
+      "net_dollars_saved_usd": 125589.8,
+      "roi_percentage": 35.13
+    },
+    {
+      "threshold": 0.45,
+      "true_positives_caught": 140,
+      "false_positives_flagged": 8838,
+      "uncaught_fraud_fn": 3,
+      "gross_fraud_prevented_usd": 350000.0,
+      "false_alarm_investigation_cost_usd": 220950.0,
+      "net_dollars_saved_usd": 128539.8,
+      "roi_percentage": 35.96
+    },
+    {
+      "threshold": 0.5,
+      "true_positives_caught": 138,
+      "false_positives_flagged": 8693,
+      "uncaught_fraud_fn": 5,
+      "gross_fraud_prevented_usd": 345000.0,
+      "false_alarm_investigation_cost_usd": 217325.0,
+      "net_dollars_saved_usd": 127164.8,
+      "roi_percentage": 35.57
+    },
+    {
+      "threshold": 0.55,
+      "true_positives_caught": 138,
+      "false_positives_flagged": 8536,
+      "uncaught_fraud_fn": 5,
+      "gross_fraud_prevented_usd": 345000.0,
+      "false_alarm_investigation_cost_usd": 213400.0,
+      "net_dollars_saved_usd": 131089.8,
+      "roi_percentage": 36.67
+    },
+    {
+      "threshold": 0.6,
+      "true_positives_caught": 135,
+      "false_positives_flagged": 8329,
+      "uncaught_fraud_fn": 8,
+      "gross_fraud_prevented_usd": 337500.0,
+      "false_alarm_investigation_cost_usd": 208225.0,
+      "net_dollars_saved_usd": 128764.8,
+      "roi_percentage": 36.02
+    },
+    {
+      "threshold": 0.65,
+      "true_positives_caught": 135,
+      "false_positives_flagged": 8149,
+      "uncaught_fraud_fn": 8,
+      "gross_fraud_prevented_usd": 337500.0,
+      "false_alarm_investigation_cost_usd": 203725.0,
+      "net_dollars_saved_usd": 133264.8,
+      "roi_percentage": 37.28
+    },
+    {
+      "threshold": 0.7,
+      "true_positives_caught": 133,
+      "false_positives_flagged": 7935,
+      "uncaught_fraud_fn": 10,
+      "gross_fraud_prevented_usd": 332500.0,
+      "false_alarm_investigation_cost_usd": 198375.0,
+      "net_dollars_saved_usd": 133614.8,
+      "roi_percentage": 37.37
+    },
+    {
+      "threshold": 0.75,
+      "true_positives_caught": 132,
+      "false_positives_flagged": 7636,
+      "uncaught_fraud_fn": 11,
+      "gross_fraud_prevented_usd": 330000.0,
+      "false_alarm_investigation_cost_usd": 190900.0,
+      "net_dollars_saved_usd": 138589.8,
+      "roi_percentage": 38.77
+    },
+    {
+      "threshold": 0.8,
+      "true_positives_caught": 131,
+      "false_positives_flagged": 7324,
+      "uncaught_fraud_fn": 12,
+      "gross_fraud_prevented_usd": 327500.0,
+      "false_alarm_investigation_cost_usd": 183100.0,
+      "net_dollars_saved_usd": 143889.8,
+      "roi_percentage": 40.25
+    },
+    {
+      "threshold": 0.85,
+      "true_positives_caught": 125,
+      "false_positives_flagged": 6916,
+      "uncaught_fraud_fn": 18,
+      "gross_fraud_prevented_usd": 312500.0,
+      "false_alarm_investigation_cost_usd": 172900.0,
+      "net_dollars_saved_usd": 139089.8,
+      "roi_percentage": 38.91
+    },
+    {
+      "threshold": 0.9,
+      "true_positives_caught": 120,
+      "false_positives_flagged": 6428,
+      "uncaught_fraud_fn": 23,
+      "gross_fraud_prevented_usd": 300000.0,
+      "false_alarm_investigation_cost_usd": 160700.0,
+      "net_dollars_saved_usd": 138789.8,
+      "roi_percentage": 38.82
+    },
+    {
+      "threshold": 0.95,
+      "true_positives_caught": 118,
+      "false_positives_flagged": 5750,
+      "uncaught_fraud_fn": 25,
+      "gross_fraud_prevented_usd": 295000.0,
+      "false_alarm_investigation_cost_usd": 143750.0,
+      "net_dollars_saved_usd": 150739.8,
+      "roi_percentage": 42.16
+    }
+  ]
+}
