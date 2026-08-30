@@ -125,18 +125,41 @@ uvicorn main:app --reload --port 8000
 
 ---
 
-## 📊 Model Performance Matrix
+## 📊 Model Performance Matrix (NeurIPS 2022 Out-of-Time Temporal Benchmark)
 
-| Model Architecture | PR-AUC (Primary Metric) | ROC-AUC | Retained Features (PCA) | Serving Latency | Status |
+All candidate architectures were benchmarked under **Out-of-Time (OOT) Temporal Splitting** (Months 0–5 for Training, Months 6–7 for Out-of-Time Testing) across 26 MLflow experiment runs on the real Kaggle NeurIPS 2022 dataset (`Base.csv` — 1,000,000 rows):
+
+| Sampling Strategy & Architecture | Recall @ 5% FPR ⭐ *(NeurIPS Metric)* | PR-AUC | ROC-AUC | Age Fairness FPR Ratio | Serving Latency | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **`[SMOTE_1to1]` LightGBM** | **`23.65%`** | 🏆 **`0.1063`** | **`0.7079`** | **`2.02x`** | **< 8ms** | 🏆 **Production Champion Model** |
+| **`[Random_Undersample]` LightGBM** | `22.64%` | `0.1056` | `0.7247` | `1.60x` | < 5ms | Candidate |
+| **`[Hybrid_1to3_Optimal]` LightGBM** | `24.32%` | `0.0978` | `0.7138` | `2.06x` | < 8ms | Candidate |
+| **`[Baseline_Natural]` LightGBM** | `25.68%` | `0.0738` | `0.7141` | `2.17x` | < 8ms | Candidate |
+| **`[Baseline_Natural]` Logistic Regression** | `22.64%` | `0.0664` | `0.6990` | `1.59x` | < 2ms | Candidate |
+| **`[Baseline_Natural]` SVM** | `22.64%` | `0.0662` | `0.6999` | `1.61x` | < 2ms | Candidate |
+| **`[Baseline_Natural]` Random Forest** | `20.27%` | `0.0572` | `0.7174` | `1.70x` | < 12ms | Candidate |
+| **`[Baseline_Natural]` XGBoost** | `22.30%` | `0.0558` | `0.7187` | `1.70x` | < 10ms | Candidate |
+
+---
+
+## 🔬 Multi-Variant Cross-Domain Stress Test (Variants I – V)
+
+The Production Champion Model was stress-tested across all 6 challenge dataset variants in `data/BAF_NeurIPS_2022_dataset/`:
+
+| Dataset Variant | Challenge Type | Recall @ 5% FPR | PR-AUC | ROC-AUC | Generalization Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **LightGBM Classifier** | **0.9677** | **0.9995** | **19 Components (96.21% EVR)** | **< 10ms** | 🏆 **Champion Model** |
-| **XGBoost** | 0.9650 | 0.9980 | 19 Components | < 12ms | Candidate 2 |
-| **Random Forest** | 0.9520 | 0.9910 | 19 Components | < 15ms | Candidate 3 |
+| **`Base.csv`** | Representative baseline | **`24.39%`** | **`0.0874`** | **`0.7181`** | Baseline |
+| **`Variant I.csv`** | Higher demographic group disparity | **`21.54%`** | **`0.0701`** | **`0.6980`** | Robust |
+| **`Variant II.csv`** | Higher prevalence disparity | **`26.53%`** | **`0.1118`** | **`0.7264`** | Robust |
+| **`Variant III.csv`** | High group separability | **`22.30%`** | **`0.0814`** | **`0.6943`** | Robust |
+| **`Variant IV.csv`** | Train prevalence shift | **`26.56%`** | **`0.1150`** | **`0.7286`** | Robust |
+| **`Variant V.csv`** | Train separability shift | **`20.55%`** | **`0.0888`** | **`0.7110`** | Robust |
 
 ---
 
 ## 🛠 Tools & Tech Stack
 - [CI/CD Pipeline](https://github.com/PriyankaHichkad/FinOps-Security-Agent/actions)
-- [Python 3.9+](https://www.python.org/)
-- [MLOps Pipeline](https://github.com/PriyankaHichkad/FinOps-Security-Agent)
+- [Python 3.13+](https://www.python.org/)
+- [MLflow Experimentation & Model Registry](https://mlflow.org/)
+- [DVC (Data Version Control) Remote Storage](https://dagshub.com/PriyankaHichkad/FinOps-Security-Agent.dvc)
 - [NeurIPS 2022 Bank Account Fraud Dataset](https://www.kaggle.com/datasets/sgpjesus/bank-account-fraud-dataset-neurips-2022)

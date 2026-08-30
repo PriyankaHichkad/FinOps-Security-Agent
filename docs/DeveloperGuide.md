@@ -59,8 +59,10 @@ flowchart TD
 ### 1. NeurIPS 2022 ML & PCA Engine (`src/ml_engine.py`)
 - **Covariance Eigen Decomposition**: $\Sigma = \frac{1}{n-1} X^T X$
 - **Explained Variance Ratio**: $EVR_i = \frac{\lambda_i}{\sum_{j=1}^p \lambda_j}$
-- **95% Cumulative Variance Thresholding**: Dynamically compresses 24 numeric applicant features down to 19 principal components (retaining 96.21% cumulative variance).
-- **MLflow Tracking**: Evaluates LightGBM, XGBoost, Random Forest, and Logistic Regression under experiment `"FinGuard_Fraud_ML_Benchmark"`.
+- **PCA Dimensionality Reduction**: Retains 5 orthogonal principal components capturing **99.99% cumulative variance** across Robust Scaled features (`RobustScaler()`).
+- **Validation Strategy**: **Out-of-Time (OOT) Temporal Split** (Months 0–5 for Training, Months 6–7 for Testing).
+- **MLflow Tracking**: Logs 26 runs evaluating 5 architectures (`LightGBM`, `XGBoost`, `Random Forest`, `Logistic Regression`, `SVM`) across 4 sampling strategies (`Baseline`, `SMOTE 1:1`, `Random Undersample`, `Hybrid 1:3`) and 6 dataset variants (`Base.csv`, `Variant I` to `Variant V`).
+- **Official NeurIPS Metrics**: Evaluates **Recall @ 5% FPR** (`23.65%`), **PR-AUC** (`0.1063`), and **Age Fairness Disparity Ratio**.
 
 ### 2. Financial Operations Agent (`src/finops_agent.py`)
 - **SequenceMatcher Ratio**: Calculates string similarity between applicant name and email username prefix dynamically.

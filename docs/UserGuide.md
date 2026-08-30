@@ -77,7 +77,7 @@ Processes an incoming transaction, application, or invoice event through the mul
     "ml_engine": {
       "fraud_probability": 0.0421,
       "risk_tier": "LOW",
-      "pca_components_used": 19
+      "pca_components_used": 5
     },
     "finops_agent": {
       "sanitized_amount": 4500.0,
