@@ -36,6 +36,9 @@ pip install -r requirements.txt
 
 # 3. Launch FastAPI REST Server
 uvicorn main:app --reload --port 8000
+
+# 4. Run FinOps Financial Backtest Loss Simulator (Yves Hilpisch Ch. 10 & 11)
+python3 src/backtest_engine.py
 ```
 * Access Swagger API Documentation live at `http://localhost:8000/docs`.
 

@@ -79,6 +79,12 @@ Synthesizes multi-agent signals into a 3-way final verdict:
 - **`ROUTE_TO_HUMAN_REVIEW`**: High dollar impact ($10k+ cap) or unapproved vendor requiring onboarding sign-off.
 - **`AUTO_BLOCK`**: Prompt injection (`UNSAFE`), hard denylist rule, or critical ML fraud probability (>0.85).
 
+### 5. FinOps Financial Backtesting Loss Simulator (`src/backtest_engine.py`)
+- **Yves Hilpisch Event-Based Framework** (*Artificial Intelligence in Finance*, Ch. 10 & 11).
+- Evaluates economic net dollar savings ($) across decision thresholds $\tau \in [0.05, 0.95]$:
+  $$\text{Net Dollars Saved}(\tau) = \Big( TP(\tau) \times \$2,500 \Big) - \Big( FP(\tau) \times \$25 \Big) - \Big( N_{\text{test}} \times \$0.05 \Big)$$
+- **Optimal Economic Threshold ($\tau^* = 0.95$)**: Achieves **`$310,056.75` Net Savings** (**41.90% ROI cost reduction**) over baseline exposure loss ($740,000.00).
+
 ---
 
 ## 🔄 Sequence Diagrams
