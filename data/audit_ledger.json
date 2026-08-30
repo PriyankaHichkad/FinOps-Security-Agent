@@ -599,5 +599,79 @@
     },
     "prev_hash": "ae4965fbea52048166f565f6d0bfc7fd5e91e360f173ef8cda3ec2366de3dc96",
     "current_hash": "6b6dce7792c9df1ea1672e429e52eab655632c32faec0463c20e1e72ba0ebd30"
+  },
+  {
+    "record_index": 25,
+    "timestamp": "2026-08-30T17:23:21.948299",
+    "event_id": "TEST-APPROVE-01",
+    "verdict": "AUTO_APPROVE",
+    "inputs": {
+      "vendor_name": "Acme Corp",
+      "amount": 1500.0,
+      "applicant_name": ""
+    },
+    "evidence": {
+      "ml_fraud_score": 0.15,
+      "ml_risk_tier": "LOW",
+      "extraction_confidence": 1.0,
+      "vendor_status": "APPROVED",
+      "po_matched": true,
+      "ueba_score": 0.0,
+      "injection_status": "SAFE",
+      "rationales": []
+    },
+    "prev_hash": "6b6dce7792c9df1ea1672e429e52eab655632c32faec0463c20e1e72ba0ebd30",
+    "current_hash": "699d6f1cd4eb70c80028a50b703de28a0409dfa9e3a5defa620ed7d4641a9adf"
+  },
+  {
+    "record_index": 26,
+    "timestamp": "2026-08-30T17:23:21.953451",
+    "event_id": "TEST-ROUTE-01",
+    "verdict": "ROUTE_TO_HUMAN_REVIEW",
+    "inputs": {
+      "vendor_name": "Acme Corp",
+      "amount": 15000.0,
+      "applicant_name": ""
+    },
+    "evidence": {
+      "ml_fraud_score": 0.15,
+      "ml_risk_tier": "LOW",
+      "extraction_confidence": 1.0,
+      "vendor_status": "APPROVED",
+      "po_matched": true,
+      "ueba_score": 0.0,
+      "injection_status": "SAFE",
+      "rationales": [
+        "Single invoice amount $15,000.00 exceeds user 'bmarley@gmail.com' assigned limit of $10,000.00"
+      ]
+    },
+    "prev_hash": "699d6f1cd4eb70c80028a50b703de28a0409dfa9e3a5defa620ed7d4641a9adf",
+    "current_hash": "f4ca1e5dbcee249c697539c8eddb455711ae48cada109f234620da1f9be515bc"
+  },
+  {
+    "record_index": 27,
+    "timestamp": "2026-08-30T17:23:21.957519",
+    "event_id": "TEST-BLOCK-01",
+    "verdict": "AUTO_BLOCK",
+    "inputs": {
+      "vendor_name": "Acme Corp",
+      "amount": 500.0,
+      "applicant_name": ""
+    },
+    "evidence": {
+      "ml_fraud_score": 0.15,
+      "ml_risk_tier": "LOW",
+      "extraction_confidence": 0.85,
+      "vendor_status": "APPROVED",
+      "po_matched": false,
+      "ueba_score": 0.0,
+      "injection_status": "UNSAFE",
+      "rationales": [
+        "Prompt injection pattern detected: 'system\\s+prompt'",
+        "Prompt injection pattern detected: 'override\\s+verdict'"
+      ]
+    },
+    "prev_hash": "f4ca1e5dbcee249c697539c8eddb455711ae48cada109f234620da1f9be515bc",
+    "current_hash": "9d23336877b7a6bf78109c17b7593c737d2a992b4fbd2c45801e458204cf9147"
   }
 ]

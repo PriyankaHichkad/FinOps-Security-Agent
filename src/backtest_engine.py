@@ -56,11 +56,19 @@ class FinOpsBacktestEngine:
             return {}
 
         if not os.path.exists(DATA_PATH):
-            logger.error(f"Dataset not found at {DATA_PATH}. Aborting backtest.")
-            return {}
-
-        logger.info("Reading dataset for Financial Backtest simulation...")
-        df = pd.read_csv(DATA_PATH)
+            logger.warning(f"Dataset not found at {DATA_PATH}. Generating fallback synthetic dataset for CI environment...")
+            from src.ml_engine import MLEngine
+            eng = MLEngine()
+            eng._generate_synthetic_baf_data()
+            synth_path = os.path.join(BASE_DIR, "data", "BAF_NeurIPS_2022.csv")
+            if os.path.exists(synth_path):
+                df = pd.read_csv(synth_path)
+            else:
+                logger.error("Could not resolve dataset for backtesting.")
+                return {}
+        else:
+            logger.info("Reading dataset for Financial Backtest simulation...")
+            df = pd.read_csv(DATA_PATH)
 
         if len(df) > sample_size and "fraud_bool" in df.columns:
             df = df.groupby("fraud_bool", group_keys=False).apply(
