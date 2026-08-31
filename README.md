@@ -1,39 +1,33 @@
 # FinOps-Security-Agent
 
-> **Enterprise Multi-Agent FinOps & Security Compliance REST Microservice with NeurIPS 2022 ML Risk Scoring and SHA-256 Audit Logging.**
+> **Multi-Agent Decisioning Microservice for Financial Operations, Security Compliance, and NeurIPS 2022 Fraud Risk Scoring.**
 
-📖 **Documentation Quick Links**:
-- 📘 [**User & REST API Guide**](docs/UserGuide.md) — Comprehensive guide on REST API endpoints (`/decide`, `/audit/verify`, `/metrics`), JSON payloads, and vendor master rules.
-- 📙 [**Developer & Architecture Guide**](docs/DeveloperGuide.md) — System architecture, Mermaid sequence diagrams, multi-agent state machine designs, and trade-off rationales.
+[**User & REST API Guide**](docs/UserGuide.md) • [**Developer Architecture Guide**](docs/DeveloperGuide.md)
 
 ---
 
-An enterprise-grade autonomous decisioning microservice that integrates **NeurIPS 2022 Bank Account Fraud (BAF)** tabular ML risk scoring, **Financial Operations (FinOps)** deterministic policy rules, **Security & Compliance (SecOps)** UEBA anomaly detection, and a **tamper-evident SHA-256 cryptographic audit ledger**.
-
----
-
-## 📌 System Architecture & Workflow
+## System Architecture
 
 ```mermaid
 flowchart TD
-    subgraph Ingestion ["1. Data Ingestion & Sanitization Layer"]
-        InputEvent["Incoming Invoice / Application API Event"]
+    subgraph Ingestion ["1. Data Ingestion & Preprocessing"]
+        InputEvent["Incoming Transaction / Application Payload"]
         BAFData["NeurIPS 2022 BAF Benchmark Data"]
     end
 
-    subgraph CoreEngine ["2. Modular Agent Engines (src/)"]
-        PCAReduction["src/ml_engine.py: PCA Scree Plot & LightGBM Fraud Scoring"]
-        FinOpsPolicy["src/finops_agent.py: Field Extractor, PO Match & Policy Rules"]
-        SecOpsAnomaly["src/security_agent.py: UEBA Anomaly Scoring & Injection Defense"]
+    subgraph CoreEngine ["2. Modular Specialist Engines (src/)"]
+        PCAReduction["src/ml_engine.py: PCA Reduction & LightGBM Fraud Scoring"]
+        FinOpsPolicy["src/finops_agent.py: Policy Rules & PO Reconciliation"]
+        SecOpsAnomaly["src/security_agent.py: UEBA Anomaly Scoring & Injection Guard"]
     end
 
     subgraph OrchestratorLayer ["3. State Machine & Audit Ledger"]
-        Orchestrator["src/orchestrator.py: Multi-Agent Verdict Synthesizer"]
+        Orchestrator["src/orchestrator.py: Multi-Agent Synthesizer"]
         FinalVerdict{"Final Decision Verdict"}
         HashChain["SHA-256 Cryptographic Hash Chain Audit Ledger"]
     end
 
-    subgraph ServingLayer ["4. REST API Serving & Microservice"]
+    subgraph ServingLayer ["4. REST API Microservice"]
         FastAPI["main.py: FastAPI REST Server (/decide, /audit/verify, /metrics)"]
         SwaggerDocs["OpenAPI / Swagger Interactive Documentation (/docs)"]
     end
@@ -50,95 +44,39 @@ flowchart TD
 
 ---
 
-## 🧠 Core Mechanics & Mathematical Foundations
+## Core Components & Engineering Foundations
 
-### 1. NeurIPS 2022 PCA Variance Engine (`src/ml_engine.py`)
-- **Covariance Matrix Calculation**: $\Sigma = \frac{1}{n-1} X^T X$
-- **Eigen Decomposition**: Computes Eigenvalues $\lambda_i$ and Eigenvectors $v_i$.
-- **Explained Variance Ratio ($EVR_i$)**: $EVR_i = \frac{\lambda_i}{\sum_{j=1}^p \lambda_j}$
-- **95% Cumulative Variance Thresholding**: Compresses 24 tabular applicant features into 19 principal orthogonal components (96.21% cumulative variance retained), enabling **sub-10ms model inference**.
+### 1. NeurIPS 2022 ML Engine & Dimensionality Reduction (`src/ml_engine.py`)
+- **Covariance Calculation**:
+  $$\Sigma = \frac{1}{n-1} X^T X$$
+- **Explained Variance Ratio**:
+  $$\text{EVR}_i = \frac{\lambda_i}{\sum_{j=1}^p \lambda_j}$$
+- **PCA Component Selection**: Retains 5 principal components capturing **99.99% cumulative variance** across Robust Scaled features (`RobustScaler`), optimizing serving latency to **< 8ms**.
 
-### 2. Deterministic Rules vs. Probabilistic Judgment (`src/finops_agent.py`)
-- **Exact Policy Rules**: Spending caps (User/Account assigned spending limit), Purchase Order (PO) matching, and duplicate payment detection are evaluated in exact Python code.
-- **Dynamic Feature Calculation**: Automatically calculates applicant `name_email_similarity` on the fly using string ratio algorithms.
+### 2. FinOps Policy & SecOps Guard (`src/finops_agent.py`, `src/security_agent.py`)
+- **Deterministic Rules**: Evaluates spending caps (\$10,000 threshold), Purchase Order matching, and vendor denylist status.
+- **Dynamic Feature Extraction**: Computes applicant name/email similarity on the fly via string ratio algorithms.
+- **SecOps Guard**: UEBA anomaly scoring for off-hours access (1–4 AM) and regex/semantic prompt injection detection.
 
-### 3. Tamper-Evident SHA-256 Audit Ledger (`src/orchestrator.py`)
-- Every decision record $R_i$ is cryptographically linked using SHA-256 hashing:
+### 3. Cryptographic Audit Ledger & Security Rationale (`src/orchestrator.py`)
+- Each decision record $R_i$ is cryptographically linked to the previous entry:
   $$H_i = \text{SHA256}(H_{i-1} \parallel R_i)$$
-- Verifies ledger integrity via `/audit/verify` to prove past logs were never retroactively edited.
+- **Architectural Defense (Hash Chaining vs. Database Append Logs)**: Standard database append logs protect against application-level overwrites, but remain vulnerable to internal database administrator (DBA) tampering or compromised DB credentials. Hash chaining creates an immutable, tamper-evident audit trail where retroactively modifying any historical entry invalidates all subsequent hashes, enabling verifiable non-repudiation during SOX and SOC 2 audits (`/audit/verify`).
 
-### 4. FinOps Financial Backtesting Loss Simulator (`src/backtest_engine.py`)
-- **Inspired by Yves Hilpisch** (*Artificial Intelligence in Finance*, Ch. 10 & 11).
-- Evaluates economic net dollar savings ($) across decision thresholds $\tau \in [0.05, 0.95]$:
-  $$\text{Net Dollars Saved}(\tau) = \Big( TP(\tau) \times \$2,500 \Big) - \Big( FP(\tau) \times \$25 \Big) - \Big( N_{\text{test}} \times \$0.05 \Big)$$
-- **Backtest Result**: Achieves **`$310,056.75` in Net Savings** (**41.90% ROI cost reduction**) at the optimal economic threshold $\tau^* = 0.95$.
-
----
-
-## 🛠 Directory Structure
-
-```
-FinOps-Security-Agent/
-├── src/
-│   ├── __init__.py           # Package Initialization
-│   ├── logger.py             # Logging & Custom Exception Handler
-│   ├── ml_engine.py          # NeurIPS 2022 ML Engine, PCA Variance & LightGBM Scoring
-│   ├── backtest_engine.py    # FinOps Financial Backtesting & Loss Simulator (Ch. 10 & 11)
-│   ├── finops_agent.py       # FinOps Field Extractor, PO Reconciliation & Rules
-│   ├── security_agent.py     # SecOps UEBA Anomaly Scoring & Prompt Injection Sanitizer
-│   └── orchestrator.py       # Decision State Machine & SHA-256 Audit Hash Chain
-├── data/
-│   ├── BAF_NeurIPS_2022.csv  # NeurIPS 2022 Benchmark Dataset
-│   └── vendor_master.json    # Approved Vendor Reference Database
-├── artifacts/                # Saved Model (.pkl) & Metrics (.json)
-├── tests/
-│   └── test_finguard.py      # 10 Passing PyTest Unit Tests
-├── main.py                   # FastAPI REST Server (/decide, /audit/verify, /metrics)
-├── Dockerfile                # Container Deployment Blueprint
-├── pyproject.toml            # Package Metadata
-├── requirements.txt          # Dependencies
-└── README.md                 # System Documentation
-```
+### 4. Financial Backtesting Loss Simulator (`src/backtest_engine.py`)
+- **Event-Based Loss Simulation** (Inspired by Yves Hilpisch, *AI in Finance*, Ch. 10 & 11):
+  $$\text{Net Saved}(\tau) = \Big( \text{TP}(\tau) \times \$2,500 \Big) - \Big( \text{FP}(\tau) \times \$25 \Big) - \Big( N_{\text{test}} \times \$0.05 \Big)$$
+- **Simulated Economic ROI**: Evaluates net dollar savings across 20,000+ Out-of-Time transactions, achieving **\$310,056.75 in Net Savings** (**41.90% ROI cost reduction**) at optimal threshold $\tau^* = 0.95$.
 
 ---
 
-## ⚡ Quick Start Guide
+## Model Performance Matrix (NeurIPS 2022 Out-of-Time Benchmark)
 
-### 1. Installation & Virtual Environment
-```bash
-git clone https://github.com/PriyankaHichkad/FinOps-Security-Agent.git
-cd FinOps-Security-Agent
+Evaluated under **Out-of-Time (OOT) Temporal Splitting** (Months 0–5 Train, Months 6–7 Test) on the Kaggle NeurIPS 2022 dataset (`Base.csv` — 1,000,000 rows):
 
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
-
-### 2. Execute PyTest Automated Suite
-```bash
-pytest tests/ -v
-```
-
-### 3. Run Reproducible DVC Pipeline
-```bash
-dvc repro
-```
-
-### 4. Launch FastAPI REST Microservice Server
-```bash
-uvicorn main:app --reload --port 8000
-```
-* Access Interactive OpenAPI / Swagger Documentation live at `http://localhost:8000/docs`.
-
----
-
-## 📊 Model Performance Matrix (NeurIPS 2022 Out-of-Time Temporal Benchmark)
-
-All candidate architectures were benchmarked under **Out-of-Time (OOT) Temporal Splitting** (Months 0–5 for Training, Months 6–7 for Out-of-Time Testing) across 26 MLflow experiment runs on the real Kaggle NeurIPS 2022 dataset (`Base.csv` — 1,000,000 rows):
-
-| Sampling Strategy & Architecture | Recall @ 5% FPR ⭐ *(NeurIPS Metric)* | PR-AUC | ROC-AUC | Age Fairness FPR Ratio | Serving Latency | Status |
+| Strategy & Model Architecture | Recall @ 5% FPR | PR-AUC | ROC-AUC | Age Fairness FPR Ratio | Serving Latency | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **`[SMOTE_1to1]` LightGBM** | **`23.65%`** | 🏆 **`0.1063`** | **`0.7079`** | **`2.02x`** | **< 8ms** | 🏆 **Production Champion Model** |
+| **`[SMOTE_1to1]` LightGBM** | **`23.65%`** | **`0.1063`** | **`0.7079`** | **`2.02x`** | **< 8ms** | **Production Champion Model** |
 | **`[Random_Undersample]` LightGBM** | `22.64%` | `0.1056` | `0.7247` | `1.60x` | < 5ms | Candidate |
 | **`[Hybrid_1to3_Optimal]` LightGBM** | `24.32%` | `0.0978` | `0.7138` | `2.06x` | < 8ms | Candidate |
 | **`[Baseline_Natural]` LightGBM** | `25.68%` | `0.0738` | `0.7141` | `2.17x` | < 8ms | Candidate |
@@ -147,11 +85,13 @@ All candidate architectures were benchmarked under **Out-of-Time (OOT) Temporal 
 | **`[Baseline_Natural]` Random Forest** | `20.27%` | `0.0572` | `0.7174` | `1.70x` | < 12ms | Candidate |
 | **`[Baseline_Natural]` XGBoost** | `22.30%` | `0.0558` | `0.7187` | `1.70x` | < 10ms | Candidate |
 
+> **Context on Benchmark Performance**: On the NeurIPS 2022 Bank Account Fraud dataset, positive fraud prevalence is extremely low (~1.10%) and features are subjected to differential privacy noise. A `Recall @ 5% FPR` of ~23.65% matches published state-of-the-art benchmarks for this dataset (Feedzai/NeurIPS 2022 reference baseline: ~23–26% Recall @ 5% FPR), achieving a **9.66× predictive lift** over random guessing.
+
 ---
 
-## 🔬 Multi-Variant Cross-Domain Stress Test (Variants I – V)
+## Multi-Variant Cross-Domain Stress Test (Variants I – V)
 
-The Production Champion Model was stress-tested across all 6 challenge dataset variants in `data/BAF_NeurIPS_2022_dataset/`:
+Generalization benchmark across all 6 dataset variants in `data/BAF_NeurIPS_2022_dataset/`:
 
 | Dataset Variant | Challenge Type | Recall @ 5% FPR | PR-AUC | ROC-AUC | Generalization Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -164,9 +104,86 @@ The Production Champion Model was stress-tested across all 6 challenge dataset v
 
 ---
 
-## 🛠 Tools & Tech Stack
-- [CI/CD Pipeline](https://github.com/PriyankaHichkad/FinOps-Security-Agent/actions)
-- [Python 3.13+](https://www.python.org/)
-- [MLflow Experimentation & Model Registry](https://mlflow.org/)
-- [DVC (Data Version Control) Remote Storage](https://dagshub.com/PriyankaHichkad/FinOps-Security-Agent.dvc)
-- [NeurIPS 2022 Bank Account Fraud Dataset](https://www.kaggle.com/datasets/sgpjesus/bank-account-fraud-dataset-neurips-2022)
+## Quick Start Guide
+
+### 1. Environment Setup
+```bash
+git clone https://github.com/PriyankaHichkad/FinOps-Security-Agent.git
+cd FinOps-Security-Agent
+
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+### 2. Execute PyTest Suite (12 Unit Tests)
+```bash
+export PYTHONPATH=.
+pytest tests/ -v
+```
+
+### 3. Financial Backtesting Loss Simulator
+```bash
+python3 src/backtest_engine.py
+```
+
+### 4. Launch FastAPI REST Server
+```bash
+uvicorn main:app --reload --port 8000
+```
+Interactive OpenAPI documentation will be available at `http://localhost:8000/docs`.
+
+---
+
+## REST API Interface (`main.py`)
+
+### Sample Payload (`POST /decide`):
+```json
+{
+  "event_id": "EVT-2026-001",
+  "applicant_name": "Alice Johnson",
+  "email": "alicejohnson@gmail.com",
+  "vendor_name": "Acme Corp",
+  "invoice_amount": "$4,500.00",
+  "po_number": "PO-1001",
+  "income": 0.6,
+  "credit_risk_score": 740,
+  "velocity_6h": 1,
+  "access_hour": 14,
+  "notes": "Monthly software subscription fee"
+}
+```
+
+### Sample Response (`200 OK`):
+```json
+{
+  "event_id": "EVT-2026-001",
+  "final_verdict": "AUTO_APPROVE",
+  "risk_level": "LOW_RISK",
+  "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "layer_breakdown": {
+    "ml_engine": {
+      "fraud_probability": 0.0421,
+      "risk_tier": "LOW",
+      "pca_components_used": 5
+    },
+    "finops_agent": {
+      "sanitized_amount": 4500.0,
+      "name_email_similarity": 0.9412,
+      "requires_human": false
+    },
+    "security_agent": {
+      "injection_status": "SAFE",
+      "ueba_score": 0.0
+    }
+  }
+}
+```
+
+---
+
+## Tech Stack & References
+- **Framework**: Python 3.13, FastAPI, Pydantic, Scikit-Learn, LightGBM, XGBoost
+- **MLOps**: MLflow Experiment Tracking, DVC (Data Version Control)
+- **Dataset**: [NeurIPS 2022 Bank Account Fraud Suite (Feedzai)](https://www.kaggle.com/datasets/sgpjesus/bank-account-fraud-dataset-neurips-2022)
+- **Financial ML Reference**: Hilpisch, Y. (2020). *Artificial Intelligence in Finance: A Python-Based Guide*. O'Reilly Media.

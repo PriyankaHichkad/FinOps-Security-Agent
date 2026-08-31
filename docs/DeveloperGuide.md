@@ -125,9 +125,9 @@ sequenceDiagram
 - **Decision**: Execute financial policy caps ($10k limit), PO matching, and duplicate payment detection in **pure deterministic Python code** rather than prompting an LLM.
 - **Rationale**: Financial compliance requires **100% deterministic mathematical precision**. LLMs can hallucinate or fluctuate rule thresholds. Reserving ML for fraud risk scoring while using code for policy rules yields zero false policy rejections.
 
-### 2. SHA-256 Hash Chaining vs. Traditional Database Storage
-- **Decision**: Link each record with $H_i = \text{SHA256}(H_{i-1} \parallel R_i)$.
-- **Rationale**: Traditional SQL databases allow retroactively editing past rows (`UPDATE transaction_log SET amount=...`). SHA-256 hash chaining ensures **tamper-evident auditability**—altering any past record invalidates every downstream hash, proving data tampering.
+### 2. SHA-256 Cryptographic Hash Chaining vs. Standard Append-Only Logs
+- **Decision**: Link each decision record with $H_i = \text{SHA256}(H_{i-1} \parallel R_i)$.
+- **Rationale**: Standard database append-only logs prevent application-level overwrites, but remain vulnerable to internal database administrator (DBA) tampering or compromised infrastructure credentials. Hash chaining creates an immutable, tamper-evident audit trail: retroactively altering any past record invalidates every downstream hash. This provides verifiable non-repudiation during SOX and SOC 2 compliance audits via `/audit/verify`.
 
 ---
 
