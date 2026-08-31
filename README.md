@@ -2,7 +2,7 @@
 
 > **Multi-Agent Decisioning Microservice for Financial Operations, Security Compliance, and NeurIPS 2022 Fraud Risk Scoring.**
 
-[**User & REST API Guide**](docs/UserGuide.md) • [**Developer Architecture Guide**](docs/DeveloperGuide.md)
+[**User & REST API Guide**](docs/UserGuide.md) • [**Developer Architecture Guide**](docs/DeveloperGuide.md) • [**Tools & Tech Stack**](#tools--tech-stack)
 
 ---
 
@@ -182,8 +182,9 @@ Interactive OpenAPI documentation will be available at `http://localhost:8000/do
 
 ---
 
-## Tech Stack & References
-- **Framework**: Python 3.13, FastAPI, Pydantic, Scikit-Learn, LightGBM, XGBoost
-- **MLOps**: MLflow Experiment Tracking, DVC (Data Version Control)
-- **Dataset**: [NeurIPS 2022 Bank Account Fraud Suite (Feedzai)](https://www.kaggle.com/datasets/sgpjesus/bank-account-fraud-dataset-neurips-2022)
-- **Financial ML Reference**: Hilpisch, Y. (2020). *Artificial Intelligence in Finance: A Python-Based Guide*. O'Reilly Media.
+## Tools & Tech Stack
+- **Core Technologies**: [Python 3.13](https://www.python.org/) • [FastAPI](https://fastapi.tiangolo.com/) • [Pydantic](https://docs.pydantic.dev/) • [Scikit-Learn](https://scikit-learn.org/) • [LightGBM](https://lightgbm.readthedocs.io/) • [XGBoost](https://xgboost.readthedocs.io/)
+- **MLOps & Storage**: [MLflow Experiment Tracking](https://mlflow.org/) • [DVC (Data Version Control)](https://dvc.org/) • [DagsHub Remote Storage](https://dagshub.com/)
+- **Dataset & Literature References**:
+  - [NeurIPS 2022 Bank Account Fraud Dataset (Feedzai / Kaggle)](https://www.kaggle.com/datasets/sgpjesus/bank-account-fraud-dataset-neurips-2022)
+  - Hilpisch, Y. (2020). [*Artificial Intelligence in Finance: A Python-Based Guide*](https://www.oreilly.com/library/view/artificial-intelligence-in/9781492055426/). O'Reilly Media.
