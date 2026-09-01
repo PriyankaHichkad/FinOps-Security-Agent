@@ -821,5 +821,56 @@
     },
     "prev_hash": "59d882b4af7808158545ef04f80996667c8a74172769265f71e192a032097581",
     "current_hash": "bbc33fc5a8d6d9c4a1f9ae37a5a0b888a94b2221f05a706f22d4ba09fcf4eb56"
+  },
+  {
+    "record_id": 34,
+    "event_id": "TEST-APPROVE-01",
+    "verdict": "AUTO_APPROVE",
+    "risk_level": "LOW_RISK",
+    "previous_hash": "bbc33fc5a8d6d9c4a1f9ae37a5a0b888a94b2221f05a706f22d4ba09fcf4eb56",
+    "current_hash": "1db4a790f82bd06c7829ffa91f65cbe29de69ccb8134f758959f758d42669e86"
+  },
+  {
+    "record_id": 35,
+    "event_id": "TEST-ROUTE-01",
+    "verdict": "ROUTE_TO_HUMAN_REVIEW",
+    "risk_level": "HIGH_RISK",
+    "previous_hash": "1db4a790f82bd06c7829ffa91f65cbe29de69ccb8134f758959f758d42669e86",
+    "current_hash": "b398f52989cafb87a65651d4b4dd9a08c4e83d92227dc7d3087a7c645c574ead"
+  },
+  {
+    "record_id": 36,
+    "event_id": "TEST-BLOCK-01",
+    "verdict": "AUTO_BLOCK",
+    "risk_level": "CRITICAL_RISK",
+    "previous_hash": "b398f52989cafb87a65651d4b4dd9a08c4e83d92227dc7d3087a7c645c574ead",
+    "current_hash": "8f36d610d5047be270f50723befc0ae5cd579f878f19da15039df8af741c8898"
+  },
+  {
+    "record_id": 37,
+    "event_id": "TEST-APPROVE-01",
+    "verdict": "AUTO_APPROVE",
+    "risk_level": "LOW_RISK",
+    "prev_hash": "8f36d610d5047be270f50723befc0ae5cd579f878f19da15039df8af741c8898",
+    "previous_hash": "8f36d610d5047be270f50723befc0ae5cd579f878f19da15039df8af741c8898",
+    "current_hash": "115dabbaed7f52dbfea89635a4e4e6b8219898bf326a5513b992fae71fc0a7f9"
+  },
+  {
+    "record_id": 38,
+    "event_id": "TEST-ROUTE-01",
+    "verdict": "ROUTE_TO_HUMAN_REVIEW",
+    "risk_level": "HIGH_IMPACT_REVIEW",
+    "prev_hash": "115dabbaed7f52dbfea89635a4e4e6b8219898bf326a5513b992fae71fc0a7f9",
+    "previous_hash": "115dabbaed7f52dbfea89635a4e4e6b8219898bf326a5513b992fae71fc0a7f9",
+    "current_hash": "7ada62749502b03041d10bebc7a204baaa7a4ede22e49a75b2bdc25592121a70"
+  },
+  {
+    "record_id": 39,
+    "event_id": "TEST-BLOCK-01",
+    "verdict": "AUTO_BLOCK",
+    "risk_level": "CRITICAL_RISK",
+    "prev_hash": "7ada62749502b03041d10bebc7a204baaa7a4ede22e49a75b2bdc25592121a70",
+    "previous_hash": "7ada62749502b03041d10bebc7a204baaa7a4ede22e49a75b2bdc25592121a70",
+    "current_hash": "0469d6f7d082e15c377e4a3c923bd06d84791230e543b1dc472ab0226f64438e"
   }
 ]
