@@ -26,30 +26,17 @@
 The system is designed as a **decoupled multi-agent micro-architecture** composed of specialized decision modules, an orchestration engine, and a cryptographic hash chain logger.
 
 ```mermaid
-flowchart TD
-    subgraph ClientLayer ["Client & REST API Interface"]
-        FastAPIEndpoint["main.py: REST Server (/decide, /audit/verify)"]
-        SwaggerUI["OpenAPI / Swagger Docs (/docs)"]
-    end
-
-    subgraph CoreEngine ["Core Decisioning Pipeline (src/)"]
-        Orchestrator["src/orchestrator.py: Multi-Agent Synthesizer"]
-        MLEngine["src/ml_engine.py: NeurIPS LightGBM & PCA Engine"]
-        FinOpsAgent["src/finops_agent.py: Policy Rules & PO Reconciliation"]
-        SecOpsAgent["src/security_agent.py: UEBA & Prompt Injection Defense"]
-    end
-
-    subgraph DataStorage ["Data & Cryptographic Audit Layer"]
-        VendorMaster["data/vendor_master.json: Reference Master DB"]
-        AuditLedger["SHA-256 Hash Chain: H_i = SHA256(H_{i-1} || R_i)"]
-        MLflowStore["mlruns/: MLflow Experiment Tracking"]
-    end
-
-    StreamlitUI & FastAPIEndpoint --> Orchestrator
-    Orchestrator --> FinOpsAgent & MLEngine & SecOpsAgent
-    FinOpsAgent --> VendorMaster
-    MLEngine --> MLflowStore
-    Orchestrator --> AuditLedger
+graph TD
+    A["Client API Request (POST /decide)"] --> B["FastAPI Microservice (main.py)"]
+    B --> C["LangGraph StateGraph Engine (src/langgraph_orchestrator.py)"]
+    
+    C --> D["1. ML Engine Node (src/ml_engine.py)"]
+    C --> E["2. FinOps Policy Node (src/finops_agent.py)"]
+    C --> F["3. SecOps Guard Node (src/security_agent.py)"]
+    
+    D & E & F --> G["Synthesize 3-Way Verdict (AUTO_APPROVE / BLOCK / HUMAN)"]
+    G --> H["Cryptographic SHA-256 Hash Chain Ledger (data/audit_ledger.json)"]
+    H --> I["JSON Decision Response + SHA-256 Hash Pointer"]
 ```
 
 ---

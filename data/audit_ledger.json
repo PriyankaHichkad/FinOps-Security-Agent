@@ -872,5 +872,32 @@
     "prev_hash": "7ada62749502b03041d10bebc7a204baaa7a4ede22e49a75b2bdc25592121a70",
     "previous_hash": "7ada62749502b03041d10bebc7a204baaa7a4ede22e49a75b2bdc25592121a70",
     "current_hash": "0469d6f7d082e15c377e4a3c923bd06d84791230e543b1dc472ab0226f64438e"
+  },
+  {
+    "record_id": 40,
+    "event_id": "TEST-APPROVE-01",
+    "verdict": "AUTO_APPROVE",
+    "risk_level": "LOW_RISK",
+    "prev_hash": "0469d6f7d082e15c377e4a3c923bd06d84791230e543b1dc472ab0226f64438e",
+    "previous_hash": "0469d6f7d082e15c377e4a3c923bd06d84791230e543b1dc472ab0226f64438e",
+    "current_hash": "e906b4cbdcf7f7610bca1a84bc969dcd5dfcf42dbb2d522aefe4c85c303fcfb8"
+  },
+  {
+    "record_id": 41,
+    "event_id": "TEST-ROUTE-01",
+    "verdict": "ROUTE_TO_HUMAN_REVIEW",
+    "risk_level": "HIGH_IMPACT_REVIEW",
+    "prev_hash": "e906b4cbdcf7f7610bca1a84bc969dcd5dfcf42dbb2d522aefe4c85c303fcfb8",
+    "previous_hash": "e906b4cbdcf7f7610bca1a84bc969dcd5dfcf42dbb2d522aefe4c85c303fcfb8",
+    "current_hash": "a015c495f06f99cfa0bdcef1742318c022a2c5d4b2be31f778a277e173e269e7"
+  },
+  {
+    "record_id": 42,
+    "event_id": "TEST-BLOCK-01",
+    "verdict": "AUTO_BLOCK",
+    "risk_level": "CRITICAL_RISK",
+    "prev_hash": "a015c495f06f99cfa0bdcef1742318c022a2c5d4b2be31f778a277e173e269e7",
+    "previous_hash": "a015c495f06f99cfa0bdcef1742318c022a2c5d4b2be31f778a277e173e269e7",
+    "current_hash": "96905231a14a90dd314dd7769bc1066b02c0b56982e990949bca5628bd120c98"
   }
 ]

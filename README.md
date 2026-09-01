@@ -9,37 +9,21 @@
 ## System Architecture
 
 ```mermaid
-flowchart TD
-    subgraph Ingestion ["1. Data Ingestion & Preprocessing"]
-        InputEvent["Incoming Transaction / Application Payload"]
-        BAFData["NeurIPS 2022 BAF Benchmark Data"]
-    end
-
-    subgraph CoreEngine ["2. Modular Specialist Engines (src/)"]
-        PCAReduction["src/ml_engine.py: PCA Reduction & LightGBM Fraud Scoring"]
-        FinOpsPolicy["src/finops_agent.py: Policy Rules & PO Reconciliation"]
-        SecOpsAnomaly["src/security_agent.py: UEBA Anomaly Scoring & Injection Guard"]
-    end
-
-    subgraph OrchestratorLayer ["3. State Machine & Audit Ledger"]
-        Orchestrator["src/orchestrator.py: Multi-Agent Synthesizer"]
-        FinalVerdict{"Final Decision Verdict"}
-        HashChain["SHA-256 Cryptographic Hash Chain Audit Ledger"]
-    end
-
-    subgraph ServingLayer ["4. REST API Microservice"]
-        FastAPI["main.py: FastAPI REST Server (/decide, /audit/verify, /metrics)"]
-        SwaggerDocs["OpenAPI / Swagger Interactive Documentation (/docs)"]
-    end
-
-    InputEvent & BAFData --> PCAReduction & FinOpsPolicy & SecOpsAnomaly
-    PCAReduction & FinOpsPolicy & SecOpsAnomaly --> Orchestrator --> FinalVerdict
-
-    FinalVerdict -->|Clean & In-Policy| AutoApprove["AUTO_APPROVE"]
-    FinalVerdict -->|Hard Risk Violation| AutoBlock["AUTO_BLOCK"]
-    FinalVerdict -->|High Impact / Low Conf| HumanQueue["ROUTE_TO_HUMAN_REVIEW"]
-
-    AutoApprove & AutoBlock & HumanQueue --> HashChain --> FastAPI --> SwaggerDocs
+graph TD
+    A["Incoming Transaction Event"] --> B["LangGraph StateGraph Workflow Engine"]
+    
+    B --> C["1. ML Engine Node (PCA & LightGBM)"]
+    B --> D["2. FinOps Policy Node (PO Match & Limits)"]
+    B --> E["3. SecOps Guard Node (UEBA & Prompt Scanner)"]
+    
+    C & D & E --> F{"LangGraph State Synthesizer"}
+    
+    F -->|Clean Transaction| G["AUTO_APPROVE"]
+    F -->|Hard Violation / Injection| H["AUTO_BLOCK"]
+    F -->|High Dollar / Limit Exceeded| I["ROUTE_TO_HUMAN_REVIEW"]
+    
+    G & H & I --> J["SHA-256 Cryptographic Audit Ledger"]
+    J --> K["FastAPI REST Service (/decide, /audit/verify, /metrics)"]
 ```
 
 ---
