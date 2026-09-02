@@ -81,9 +81,14 @@ class FinOpsBacktestEngine:
         else:
             test_df = df.sample(frac=0.2, random_state=42).copy()
 
-        from src.ml_engine import FEATURE_COLUMNS
-        existing_cols = [c for c in FEATURE_COLUMNS if c in test_df.columns]
-        X_test = test_df[existing_cols].fillna(test_df[existing_cols].median(numeric_only=True))
+        from src.ml_engine import _engineer_ratio_features, ALL_FEATURE_COLUMNS
+        test_df = _engineer_ratio_features(test_df)
+        expected_cols = list(self.scaler.feature_names_in_) if hasattr(self.scaler, "feature_names_in_") else ALL_FEATURE_COLUMNS
+        for c in expected_cols:
+            if c not in test_df.columns:
+                test_df[c] = 0.0
+
+        X_test = test_df[expected_cols].fillna(test_df[expected_cols].median(numeric_only=True))
         y_test = test_df["fraud_bool"].values
 
         X_sc = self.scaler.transform(X_test)

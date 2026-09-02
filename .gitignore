@@ -21,3 +21,4 @@ mlflow.db
 .DS_Store
 .vscode/
 .idea/
+catboost_info/

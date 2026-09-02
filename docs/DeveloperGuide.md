@@ -27,18 +27,18 @@ Before online inference serving, model training is conducted through an automate
 
 ```mermaid
 graph TD
-    A["Raw Dataset (Base.csv - 1,000,000 Rows)"] --> B["NeurIPS 2022 OOT Temporal Split (Months 0-5 Train, 6-7 Test)"]
+    A["Raw Dataset (Base.csv - 1,000,000 Rows)"] --> B["Step 1: Ratio Feature Engineering (Velocity Acceleration & Solvency Ratios)"]
+    B --> C["NeurIPS 2022 OOT Temporal Split (Months 0-5 Train, 6-7 Test)"]
     
-    B --> C["RobustScaler Feature Normalization"]
-    C --> D["Covariance Eigen Decomposition & PCA (5 Components - 99.99% Variance)"]
+    C --> D["RobustScaler Normalization & PCA (5 Components - 99.99% Variance)"]
+    D --> E["Step 2: Optuna Bayesian Hyperparameter Optimization (5 Model Families)"]
     
-    D --> E["Class Imbalance Handling (SMOTE 1:1 Oversampling)"]
+    E --> F["Step 3: MLflow Experiment Tracking & Top 4 Model Selection"]
+    F --> G["Step 4: Multi-Model Weighted Stacking Ensemble"]
+    G --> H["Step 5: Probability Calibration (Isotonic / Sigmoid)"]
     
-    E --> F["MLflow Experiment Tracking (26 Runs across 5 Architectures)"]
-    F --> G["Champion Model Selection (Recall @ 5% FPR & PR-AUC)"]
-    
-    G --> H["Artifact Serialization (champion_model.pkl, scaler.pkl, pca_transformer.pkl)"]
-    H --> I["Serving Core (POST /decide & POST /decide/batch)"]
+    H --> I["Artifact Serialization (champion_model.pkl, scaler.pkl, pca_transformer.pkl)"]
+    I --> J["Serving Core (POST /decide & POST /decide/batch)"]
 ```
 
 ---

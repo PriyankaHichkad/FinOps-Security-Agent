@@ -163,3 +163,37 @@ def test_pyspark_batch_engine():
     assert summary["status"] == "SUCCESS"
     assert summary["total_records_processed"] > 0
     assert "verdict_distribution" in summary
+
+def test_feature_ratio_engineering():
+    """Verify 5-Step Pipeline Ratio Feature Engineering."""
+    import pandas as pd
+    from src.ml_engine import _engineer_ratio_features
+    sample_df = pd.DataFrame([{
+        "velocity_6h": 10.0,
+        "velocity_24h": 20.0,
+        "velocity_4week": 100.0,
+        "income": 0.8,
+        "proposed_credit_limit": 1000.0,
+        "bank_months_count": 24.0,
+        "customer_age": 30.0
+    }])
+    res_df = _engineer_ratio_features(sample_df)
+    assert "velocity_acceleration_6h_24h" in res_df.columns
+    assert "velocity_acceleration_24h_4w" in res_df.columns
+    assert "credit_to_income_ratio" in res_df.columns
+    assert "bank_tenure_to_age_ratio" in res_df.columns
+    assert res_df["velocity_acceleration_6h_24h"].iloc[0] > 0.0
+
+def test_champion_ensemble_scoring():
+    """Verify Multi-Model Weighted Stacking Ensemble scoring."""
+    import numpy as np
+    from src.ml_engine import ChampionEnsemble
+    class DummyModel:
+        def predict_proba(self, X):
+            return np.array([[0.8, 0.2] for _ in range(X.shape[0])])
+    
+    ensemble = ChampionEnsemble([(DummyModel(), 1.0, "Dummy1"), (DummyModel(), 1.0, "Dummy2")])
+    probs = ensemble.predict_proba(np.zeros((2, 5)))
+    assert probs.shape == (2, 2)
+    assert probs[0][1] == 0.2
+
