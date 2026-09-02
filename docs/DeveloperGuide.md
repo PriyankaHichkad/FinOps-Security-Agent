@@ -27,7 +27,8 @@ The system is designed as a **decoupled multi-agent micro-architecture** compose
 
 ```mermaid
 graph TD
-    A["Client API Request (POST /decide)"] --> B["FastAPI Microservice (main.py)"]
+    A1["Single REST Event (POST /decide)"] --> B["FastAPI Microservice (main.py)"]
+    A2["PySpark Batch Event (POST /decide/batch)"] --> B
     B --> C["LangGraph StateGraph Engine (src/langgraph_orchestrator.py)"]
     
     C --> D["1. ML Engine Node (src/ml_engine.py)"]

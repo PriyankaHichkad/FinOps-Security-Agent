@@ -10,7 +10,8 @@
 
 ```mermaid
 graph TD
-    A["Incoming Transaction Event"] --> B["LangGraph StateGraph Workflow Engine"]
+    A1["Single REST Event (POST /decide)"] --> B["LangGraph StateGraph Engine"]
+    A2["PySpark Big Data Batch (POST /decide/batch)"] --> B
     
     B --> C["1. ML Engine Node (PCA & LightGBM)"]
     B --> D["2. FinOps Policy Node (PO Match & Limits)"]
@@ -18,12 +19,12 @@ graph TD
     
     C & D & E --> F{"LangGraph State Synthesizer"}
     
-    F -->|Clean Transaction| G["AUTO_APPROVE"]
+    F -->|Clean Event| G["AUTO_APPROVE"]
     F -->|Hard Violation / Injection| H["AUTO_BLOCK"]
     F -->|High Dollar / Limit Exceeded| I["ROUTE_TO_HUMAN_REVIEW"]
     
     G & H & I --> J["SHA-256 Cryptographic Audit Ledger"]
-    J --> K["FastAPI REST Service (/decide, /audit/verify, /metrics)"]
+    J --> K["FastAPI Service (/decide, /decide/batch, /audit/verify)"]
 ```
 
 ---
