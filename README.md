@@ -4,9 +4,29 @@
 
 [**User & REST API Guide**](docs/UserGuide.md) • [**Developer Architecture Guide**](docs/DeveloperGuide.md) • [**Tools & Tech Stack**](#tools--tech-stack)
 
+## 🛠 Offline ML Model Training & Governance Pipeline
+
+Before serving real-time predictions, the ML champion model is trained, validated, and serialized offline:
+
+```mermaid
+graph TD
+    A["Raw Dataset (Base.csv - 1,000,000 Rows)"] --> B["NeurIPS 2022 OOT Temporal Split (Months 0-5 Train, 6-7 Test)"]
+    
+    B --> C["RobustScaler Feature Normalization"]
+    C --> D["Covariance Eigen Decomposition & PCA (5 Components - 99.99% Variance)"]
+    
+    D --> E["Class Imbalance Handling (SMOTE 1:1 Oversampling)"]
+    
+    E --> F["MLflow Experiment Tracking (26 Runs across 5 Architectures)"]
+    F --> G["Champion Model Selection (Recall @ 5% FPR & PR-AUC)"]
+    
+    G --> H["Artifact Serialization (champion_model.pkl, scaler.pkl, pca_transformer.pkl)"]
+    H --> I["Inference Serving Engine (POST /decide & POST /decide/batch)"]
+```
+
 ---
 
-## System Architecture
+## System Serving Architecture
 
 ```mermaid
 graph TD

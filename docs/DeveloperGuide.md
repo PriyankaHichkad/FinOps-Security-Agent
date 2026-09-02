@@ -21,7 +21,29 @@
 
 ---
 
-## 🏗 Architecture Overview
+## 🛠 ML Model Training & MLflow Governance Pipeline
+
+Before online inference serving, model training is conducted through an automated offline MLflow experiment tracking pipeline:
+
+```mermaid
+graph TD
+    A["Raw Dataset (Base.csv - 1,000,000 Rows)"] --> B["NeurIPS 2022 OOT Temporal Split (Months 0-5 Train, 6-7 Test)"]
+    
+    B --> C["RobustScaler Feature Normalization"]
+    C --> D["Covariance Eigen Decomposition & PCA (5 Components - 99.99% Variance)"]
+    
+    D --> E["Class Imbalance Handling (SMOTE 1:1 Oversampling)"]
+    
+    E --> F["MLflow Experiment Tracking (26 Runs across 5 Architectures)"]
+    F --> G["Champion Model Selection (Recall @ 5% FPR & PR-AUC)"]
+    
+    G --> H["Artifact Serialization (champion_model.pkl, scaler.pkl, pca_transformer.pkl)"]
+    H --> I["Serving Core (POST /decide & POST /decide/batch)"]
+```
+
+---
+
+## 🏗 System Serving Architecture Overview
 
 The system is designed as a **decoupled multi-agent micro-architecture** composed of specialized decision modules, an orchestration engine, and a cryptographic hash chain logger.
 
