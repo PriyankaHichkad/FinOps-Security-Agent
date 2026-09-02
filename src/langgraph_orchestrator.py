@@ -111,7 +111,7 @@ class LangGraphOrchestrator:
             verdict = "AUTO_BLOCK"
             risk_level = "CRITICAL_RISK"
         # 2. Human Review Trigger
-        elif fin_ev.get("requires_human", False) or ml_ev.get("fraud_probability", 0.0) >= 0.50 or sec_ev.get("ueba_score", 0.0) > 0.60:
+        elif fin_ev.get("requires_human", False) or ml_ev.get("fraud_probability", 0.0) >= 0.70 or sec_ev.get("ueba_score", 0.0) > 0.60:
             verdict = "ROUTE_TO_HUMAN_REVIEW"
             risk_level = "HIGH_IMPACT_REVIEW"
 

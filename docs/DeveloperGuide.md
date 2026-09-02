@@ -72,6 +72,11 @@ Synthesizes multi-agent signals into a 3-way final verdict:
   $$\text{Net Dollars Saved}(\tau) = \Big( TP(\tau) \times \$2,500 \Big) - \Big( FP(\tau) \times \$25 \Big) - \Big( N_{\text{test}} \times \$0.05 \Big)$$
 - **Optimal Economic Threshold ($\tau^* = 0.95$)**: Achieves **`$310,056.75` Net Savings** (**41.90% ROI cost reduction**) over baseline exposure loss ($740,000.00).
 
+### 6. PySpark Big Data Batch Data Processing Engine (`src/pyspark_batch.py`)
+- **Distributed DataFrame Abstraction**: Initializes local `SparkSession` for large-scale dataset batch scoring over 1,000,000 raw NeurIPS 2022 records.
+- **Graceful Fallback Mechanics**: Automatically catches `[JAVA_GATEWAY_EXITED]` or environment JVM errors on lightweight non-Java deployments, automatically falling back to an optimized Pandas batch engine maintaining **~4,000–4,900 items/sec throughput**.
+- **REST Integration**: Exposes batch processing via FastAPI `POST /decide/batch`.
+
 ---
 
 ## 🔄 Sequence Diagrams

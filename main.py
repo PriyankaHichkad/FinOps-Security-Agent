@@ -70,3 +70,13 @@ def get_system_metrics():
         "pca_variance": pca_metrics,
         "audit_ledger_status": audit_status
     }
+
+@app.post("/decide/batch")
+def decide_batch_events():
+    """
+    Executes PySpark Big Data Batch Processing on stored batch CSV datasets.
+    """
+    from src.pyspark_batch import PySparkBatchEngine
+    engine = PySparkBatchEngine()
+    summary = engine.run_batch_pipeline()
+    return summary

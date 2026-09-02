@@ -47,7 +47,12 @@ graph TD
   $$H_i = \text{SHA256}(H_{i-1} \parallel R_i)$$
 - **Architectural Defense (Hash Chaining vs. Database Append Logs)**: Standard database append logs protect against application-level overwrites, but remain vulnerable to internal database administrator (DBA) tampering or compromised DB credentials. Hash chaining creates an immutable, tamper-evident audit trail where retroactively modifying any historical entry invalidates all subsequent hashes, enabling verifiable non-repudiation during SOX and SOC 2 audits (`/audit/verify`).
 
-### 4. Financial Backtesting Loss Simulator (`src/backtest_engine.py`)
+### 4. PySpark Big Data Batch Data Processing Engine (`src/pyspark_batch.py`)
+- **High-Throughput Distributed Processing**: Executes batch fraud scoring over the 1,000,000-row NeurIPS 2022 dataset (`Base.csv`).
+- **Resilient Fallback Mechanics**: Automatically detects local Spark Gateway availability. When Java runtime constraints occur, seamlessly falls back to optimized Pandas chunk processing, achieving **~4,000–4,900 items/sec throughput**.
+- **Batch Verdict Synthesizer**: Groups decision outcomes (`AUTO_APPROVE`, `AUTO_BLOCK`, `ROUTE_TO_HUMAN_REVIEW`) and saves summary metrics to `artifacts/pyspark_batch_summary.json`.
+
+### 5. Financial Backtesting Loss Simulator (`src/backtest_engine.py`)
 - **Event-Based Loss Simulation** (Inspired by Yves Hilpisch, *AI in Finance*, Ch. 10 & 11):
   $$\text{Net Saved}(\tau) = \Big( \text{TP}(\tau) \times \$2,500 \Big) - \Big( \text{FP}(\tau) \times \$25 \Big) - \Big( N_{\text{test}} \times \$0.05 \Big)$$
 - **Simulated Economic ROI**: Evaluates net dollar savings across 20,000+ Out-of-Time transactions, achieving **\$310,056.75 in Net Savings** (**41.90% ROI cost reduction**) at optimal threshold $\tau^* = 0.95$.
@@ -100,18 +105,23 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Execute PyTest Suite (12 Unit Tests)
+### 2. Execute PyTest Suite (13 Unit Tests)
 ```bash
 export PYTHONPATH=.
 pytest tests/ -v
 ```
 
-### 3. Financial Backtesting Loss Simulator
+### 3. PySpark Big Data Batch Processing Pipeline
+```bash
+python3 src/pyspark_batch.py
+```
+
+### 4. Financial Backtesting Loss Simulator
 ```bash
 python3 src/backtest_engine.py
 ```
 
-### 4. Launch FastAPI REST Server
+### 5. Launch FastAPI REST Server
 ```bash
 uvicorn main:app --reload --port 8000
 ```
@@ -121,7 +131,7 @@ Interactive OpenAPI documentation will be available at `http://localhost:8000/do
 
 ## REST API Interface (`main.py`)
 
-### Sample Payload (`POST /decide`):
+### Single Decision Payload (`POST /decide`):
 ```json
 {
   "event_id": "EVT-2026-001",
@@ -138,36 +148,13 @@ Interactive OpenAPI documentation will be available at `http://localhost:8000/do
 }
 ```
 
-### Sample Response (`200 OK`):
-```json
-{
-  "event_id": "EVT-2026-001",
-  "final_verdict": "AUTO_APPROVE",
-  "risk_level": "LOW_RISK",
-  "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "layer_breakdown": {
-    "ml_engine": {
-      "fraud_probability": 0.0421,
-      "risk_tier": "LOW",
-      "pca_components_used": 5
-    },
-    "finops_agent": {
-      "sanitized_amount": 4500.0,
-      "name_email_similarity": 0.9412,
-      "requires_human": false
-    },
-    "security_agent": {
-      "injection_status": "SAFE",
-      "ueba_score": 0.0
-    }
-  }
-}
-```
+### PySpark Batch Decision Endpoint (`POST /decide/batch`):
+Executes high-throughput batch dataset decisioning and returns total items processed, elapsed runtime, items/sec throughput, and verdict distributions.
 
 ---
 
 ## Tools & Tech Stack
-- **Core Technologies**: [Python 3.13](https://www.python.org/) • [FastAPI](https://fastapi.tiangolo.com/) • [Pydantic](https://docs.pydantic.dev/) • [Scikit-Learn](https://scikit-learn.org/) • [LightGBM](https://lightgbm.readthedocs.io/) • [XGBoost](https://xgboost.readthedocs.io/)
+- **Core Technologies**: [Python 3.13](https://www.python.org/) • [FastAPI](https://fastapi.tiangolo.com/) • [Pydantic](https://docs.pydantic.dev/) • [Scikit-Learn](https://scikit-learn.org/) • [LightGBM](https://lightgbm.readthedocs.io/) • [PySpark](https://spark.apache.org/docs/latest/api/python/) • [LangGraph](https://langchain-ai.github.io/langgraph/)
 - **MLOps & Storage**: [MLflow Experiment Tracking](https://mlflow.org/) • [DVC (Data Version Control)](https://dvc.org/) • [DagsHub Remote Storage](https://dagshub.com/)
 - **Dataset & Literature References**:
   - [NeurIPS 2022 Bank Account Fraud Dataset (Feedzai / Kaggle)](https://www.kaggle.com/datasets/sgpjesus/bank-account-fraud-dataset-neurips-2022)

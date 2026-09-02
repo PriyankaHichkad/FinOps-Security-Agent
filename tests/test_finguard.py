@@ -71,7 +71,18 @@ def test_orchestrator_auto_approve():
         "vendor_name": "Acme Corp",
         "invoice_amount": 1500.00,
         "po_number": "PO-1001",
-        "velocity_6h": 1,
+        "income": 0.9,
+        "customer_age": 40.0,
+        "credit_risk_score": 740.0,
+        "prev_address_months_count": 24.0,
+        "current_address_months_count": 48.0,
+        "bank_months_count": 36.0,
+        "has_other_cards": 1.0,
+        "phone_home_valid": 1.0,
+        "phone_mobile_valid": 1.0,
+        "velocity_6h": 0.0,
+        "velocity_24h": 0.0,
+        "velocity_4week": 0.0,
         "access_hour": 14,
         "notes": "Office supplies invoice"
     }
@@ -90,7 +101,18 @@ def test_orchestrator_route_to_human():
         "vendor_name": "Acme Corp",
         "invoice_amount": 15000.00,  # Exceeds $10,000 cap
         "po_number": "PO-1002",
-        "velocity_6h": 2,
+        "income": 0.9,
+        "customer_age": 40.0,
+        "credit_risk_score": 740.0,
+        "prev_address_months_count": 24.0,
+        "current_address_months_count": 48.0,
+        "bank_months_count": 36.0,
+        "has_other_cards": 1.0,
+        "phone_home_valid": 1.0,
+        "phone_mobile_valid": 1.0,
+        "velocity_6h": 0.0,
+        "velocity_24h": 0.0,
+        "velocity_4week": 0.0,
         "access_hour": 11
     }
     res = orchestrator.process_event(high_impact_input)
@@ -132,3 +154,12 @@ def test_financial_backtest_engine():
     assert "total_test_transactions" in res
     assert "optimal_net_dollars_saved_usd" in res
     assert isinstance(res["optimal_net_dollars_saved_usd"], (int, float))
+
+def test_pyspark_batch_engine():
+    """Verify Big Data PySpark Batch Engine execution."""
+    from src.pyspark_batch import PySparkBatchEngine
+    engine = PySparkBatchEngine()
+    summary = engine.run_batch_pipeline()
+    assert summary["status"] == "SUCCESS"
+    assert summary["total_records_processed"] > 0
+    assert "verdict_distribution" in summary

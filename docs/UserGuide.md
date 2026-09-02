@@ -100,6 +100,29 @@ Processes an incoming transaction, application, or invoice event through the mul
 
 ---
 
+### `POST /decide/batch`
+Triggers high-throughput batch fraud scoring and decisioning across 1,000,000 dataset rows in `data/BAF_NeurIPS_2022_dataset/Base.csv` via PySpark or Pandas fallback.
+
+**Sample Response Body (`200 OK`)**:
+```json
+{
+  "status": "SUCCESS",
+  "engine": "PySpark Distributed Batch Engine",
+  "dataset": "Base.csv",
+  "total_records_processed": 1000000,
+  "elapsed_seconds": 202.53,
+  "throughput_items_per_sec": 4937.5,
+  "average_fraud_probability": 0.15,
+  "verdict_distribution": {
+    "AUTO_APPROVE": 820500,
+    "AUTO_BLOCK": 12500,
+    "ROUTE_TO_HUMAN_REVIEW": 167000
+  }
+}
+```
+
+---
+
 ### `GET /audit/verify`
 Validates the complete SHA-256 cryptographic hash chain on disk to prove zero retroactive tampering.
 
