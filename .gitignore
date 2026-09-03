@@ -11,6 +11,7 @@ venv/
 
 # Large Datasets & Artifacts
 data/BAF_NeurIPS_2022.csv
+artifacts/*.pkl
 artifacts/*.xlsx
 *.log
 mlruns/
