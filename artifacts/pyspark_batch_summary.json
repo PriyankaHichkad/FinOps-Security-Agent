@@ -3,12 +3,12 @@
   "engine": "Pandas Batch Fallback Engine",
   "dataset": "Base.csv",
   "total_records_processed": 1000000,
-  "elapsed_seconds": 212.27,
-  "throughput_items_per_sec": 4711.0,
-  "average_fraud_probability": 0.7919,
+  "elapsed_seconds": 691.88,
+  "throughput_items_per_sec": 1445.3,
+  "average_fraud_probability": 0.429,
   "verdict_distribution": {
     "AUTO_APPROVE": 0,
-    "AUTO_BLOCK": 3206,
-    "ROUTE_TO_HUMAN_REVIEW": 1794
+    "AUTO_BLOCK": 0,
+    "ROUTE_TO_HUMAN_REVIEW": 5000
   }
 }
