@@ -177,19 +177,11 @@ class MLEngine:
                 logger.info("Loading pre-trained ML Champion Model and PCA Transformer from artifacts...")
                 try:
                     self.model = joblib.load(MODEL_PATH)
-                except Exception as e_model:
-                    logger.warning(f"Cross-platform unpickling notice ({e_model}). Loading in-memory fallback ensemble...")
-                    self.model = self._create_fallback_ensemble()
-
-                try:
                     self.scaler = joblib.load(SCALER_PATH)
-                except Exception:
-                    self.scaler = RobustScaler()
-
-                try:
                     self.pca = joblib.load(PCA_PATH)
-                except Exception:
-                    self.pca = PCA(n_components=5)
+                except Exception as e_model:
+                    logger.warning(f"Cross-platform unpickling notice ({e_model}). Loading in-memory fitted fallback components...")
+                    self.model, self.scaler, self.pca = self._create_fallback_components()
 
                 if os.path.exists(METRICS_PATH):
                     with open(METRICS_PATH, "r") as f:
@@ -202,30 +194,33 @@ class MLEngine:
                     logger.info("Artifacts not found. Initiating MLflow Experiment Tracking & Training Pipeline...")
                     self.train_pipeline()
                 else:
-                    logger.info("Pre-trained artifacts and raw dataset not present. Constructing in-memory ensemble...")
-                    self.model = self._create_fallback_ensemble()
-                    self.scaler = RobustScaler()
-                    self.pca = PCA(n_components=5)
+                    logger.info("Pre-trained artifacts and raw dataset not present. Constructing in-memory fitted components...")
+                    self.model, self.scaler, self.pca = self._create_fallback_components()
         except Exception as e:
             logger.error(f"Error initializing ML Engine: {e}")
             if os.path.exists(DATA_PATH):
                 self.train_pipeline()
             else:
-                self.model = self._create_fallback_ensemble()
-                self.scaler = RobustScaler()
-                self.pca = PCA(n_components=5)
+                self.model, self.scaler, self.pca = self._create_fallback_components()
 
-    def _create_fallback_ensemble(self):
+    def _create_fallback_components(self):
         """
-        Creates a lightweight ChampionEnsemble fallback for cross-platform OS runners.
+        Creates lightweight fitted ChampionEnsemble, RobustScaler, and PCA fallbacks.
         """
+        scaler = RobustScaler()
+        pca = PCA(n_components=5)
+        np.random.seed(42)
+        X_dummy = pd.DataFrame(np.random.randn(100, 30), columns=ALL_FEATURE_COLUMNS)
+        y_dummy = np.random.choice([0, 1], size=100, p=[0.9, 0.1])
+        X_scaled = scaler.fit_transform(X_dummy)
+        X_pca = pca.fit_transform(X_scaled)
+        
         rf = RandomForestClassifier(n_estimators=50, max_depth=8, random_state=42)
         lr = LogisticRegression(C=1.0, max_iter=500, random_state=42)
-        X_dummy = np.random.randn(100, 5)
-        y_dummy = np.random.choice([0, 1], size=100, p=[0.9, 0.1])
-        rf.fit(X_dummy, y_dummy)
-        lr.fit(X_dummy, y_dummy)
-        return ChampionEnsemble([(rf, 0.6, "RandomForest"), (lr, 0.4, "LogisticRegression")])
+        rf.fit(X_pca, y_dummy)
+        lr.fit(X_pca, y_dummy)
+        model = ChampionEnsemble([(rf, 0.6, "RandomForest"), (lr, 0.4, "LogisticRegression")])
+        return model, scaler, pca
 
     def _tune_with_optuna(self, model_name, X_tr, y_tr, X_val, y_val, pos_weight):
         """
