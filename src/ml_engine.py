@@ -175,77 +175,21 @@ class MLEngine:
         try:
             if os.path.exists(MODEL_PATH) and os.path.exists(SCALER_PATH) and os.path.exists(PCA_PATH):
                 logger.info("Loading pre-trained ML Champion Model and PCA Transformer from artifacts...")
-                try:
-                    self.model = joblib.load(MODEL_PATH)
-                    self.scaler = joblib.load(SCALER_PATH)
-                    self.pca = joblib.load(PCA_PATH)
-                except Exception as e_model:
-                    logger.warning(f"Cross-platform unpickling notice ({e_model}). Loading in-memory fitted fallback components...")
-                    self.model, self.scaler, self.pca = self._create_fallback_components()
+                self.model = joblib.load(MODEL_PATH)
+                self.scaler = joblib.load(SCALER_PATH)
+                self.pca = joblib.load(PCA_PATH)
+                if os.path.exists(METRICS_PATH):
+                    with open(METRICS_PATH, "r") as f:
+                        self.pca_metrics = json.load(f)
+                if os.path.exists(COMPARISON_PATH):
+                    with open(COMPARISON_PATH, "r") as f:
+                        self.comparison_matrix = json.load(f)
             else:
-                if os.path.exists(DATA_PATH):
-                    logger.info("Artifacts not found. Initiating MLflow Experiment Tracking & Training Pipeline...")
-                    self.train_pipeline()
-                else:
-                    logger.info("Pre-trained artifacts and raw dataset not present. Constructing in-memory fitted components...")
-                    self.model, self.scaler, self.pca = self._create_fallback_components()
+                logger.info("Artifacts not found. Initiating MLflow Experiment Tracking & Training Pipeline...")
+                self.train_pipeline()
         except Exception as e:
             logger.error(f"Error initializing ML Engine: {e}")
-            if os.path.exists(DATA_PATH):
-                self.train_pipeline()
-            else:
-                self.model, self.scaler, self.pca = self._create_fallback_components()
-
-        # Guarantee metrics and comparison matrix are always loaded
-        if os.path.exists(METRICS_PATH):
-            try:
-                with open(METRICS_PATH, "r") as f:
-                    self.pca_metrics = json.load(f)
-            except Exception:
-                pass
-        if not self.pca_metrics:
-            self.pca_metrics = {
-                "total_features": 30,
-                "retained_components": 5,
-                "cumulative_variance_explained": 0.9999,
-                "pr_auc": 0.2365,
-                "recall_at_5_fpr": 0.2365
-            }
-
-        if os.path.exists(COMPARISON_PATH):
-            try:
-                with open(COMPARISON_PATH, "r") as f:
-                    self.comparison_matrix = json.load(f)
-            except Exception:
-                pass
-        if not self.comparison_matrix:
-            self.comparison_matrix = [{
-                "experiment_run": "[SMOTE_1to1] XGBoost",
-                "recall_at_5_fpr": 0.2365,
-                "pr_auc": 0.2365,
-                "roc_auc": 0.8938,
-                "fairness_fpr_ratio": 1.05,
-                "status": "CHAMPION"
-            }]
-
-    def _create_fallback_components(self):
-        """
-        Creates lightweight fitted ChampionEnsemble, RobustScaler, and PCA fallbacks.
-        """
-        scaler = RobustScaler()
-        pca = PCA(n_components=5)
-        np.random.seed(42)
-        X_dummy = pd.DataFrame(np.random.randn(100, 30), columns=ALL_FEATURE_COLUMNS)
-        y_dummy = np.random.choice([0, 1], size=100, p=[0.9, 0.1])
-        X_scaled = scaler.fit_transform(X_dummy)
-        X_pca = pca.fit_transform(X_scaled)
-        
-        rf = RandomForestClassifier(n_estimators=50, max_depth=8, random_state=42)
-        lr = LogisticRegression(C=1.0, max_iter=500, random_state=42)
-        rf.fit(X_pca, y_dummy)
-        lr.fit(X_pca, y_dummy)
-        model = ChampionEnsemble([(rf, 0.6, "RandomForest"), (lr, 0.4, "LogisticRegression")])
-        return model, scaler, pca
+            self.train_pipeline()
 
     def _tune_with_optuna(self, model_name, X_tr, y_tr, X_val, y_val, pos_weight):
         """
@@ -332,9 +276,11 @@ class MLEngine:
     def train_pipeline(self):
         try:
             if not os.path.exists(DATA_PATH):
-                raise FinGuardException(f"Real NeurIPS 2022 dataset Base.csv is required for training. File not found at: {DATA_PATH}")
+                logger.warning(f"Dataset not found at {DATA_PATH}. Generating synthetic BAF benchmark dataset...")
+                self._generate_synthetic_baf_data()
+            else:
+                logger.info(f"Real dataset detected at {DATA_PATH} ({os.path.getsize(DATA_PATH)/1e6:.2f} MB). Skipping synthetic generation.")
 
-            logger.info(f"Real NeurIPS 2022 dataset detected at {DATA_PATH} ({os.path.getsize(DATA_PATH)/1e6:.2f} MB).")
             logger.info("Reading dataset for 5-Step Pipeline (Feature Engineering, Optuna Tuning, MLflow Top-4 Ensembling)...")
             df = pd.read_csv(DATA_PATH)
             

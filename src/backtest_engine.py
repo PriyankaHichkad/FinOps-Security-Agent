@@ -56,20 +56,19 @@ class FinOpsBacktestEngine:
             return {}
 
         if not os.path.exists(DATA_PATH):
-            logger.info("No raw CSV dataset present on runner filesystem. Loading pre-computed real-data backtest metrics from artifacts...")
-            results_path = os.path.join(ARTIFACTS_DIR, "backtest_results.json")
-            if os.path.exists(results_path):
-                with open(results_path, "r") as f:
-                    return json.load(f)
-            return {
-                "total_test_transactions": 200000,
-                "unmitigated_fraud_loss_usd": 740000.0,
-                "optimal_net_dollars_saved_usd": 310056.75,
-                "optimal_threshold_tau": 0.95
-            }
-
-        logger.info(f"Reading real NeurIPS 2022 dataset for Financial Backtest simulation ({DATA_PATH})...")
-        df = pd.read_csv(DATA_PATH)
+            logger.warning(f"Dataset not found at {DATA_PATH}. Generating fallback synthetic dataset for CI environment...")
+            from src.ml_engine import MLEngine
+            eng = MLEngine()
+            eng._generate_synthetic_baf_data()
+            synth_path = os.path.join(BASE_DIR, "data", "BAF_NeurIPS_2022.csv")
+            if os.path.exists(synth_path):
+                df = pd.read_csv(synth_path)
+            else:
+                logger.error("Could not resolve dataset for backtesting.")
+                return {}
+        else:
+            logger.info("Reading dataset for Financial Backtest simulation...")
+            df = pd.read_csv(DATA_PATH)
 
         if len(df) > sample_size and "fraud_bool" in df.columns:
             df = df.groupby("fraud_bool", group_keys=False).apply(
