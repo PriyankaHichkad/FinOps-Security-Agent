@@ -58,6 +58,13 @@ except ImportError:
     HAS_MLFLOW = False
     mlflow = None
 
+try:
+    from tabpfn import TabPFNClassifier
+    HAS_TABPFN = True
+except ImportError:
+    HAS_TABPFN = False
+    TabPFNClassifier = None
+
 from src.logger import logger, FinGuardException
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -255,6 +262,9 @@ class MLEngine:
                         class_weight="balanced",
                         random_state=42
                     )
+                elif model_name == "TabPFN" and HAS_TABPFN:
+                    n_ens = trial.suggest_int("N_ensemble_configurations", 4, 32, step=4)
+                    model = TabPFNClassifier(N_ensemble_configurations=n_ens, device="cpu")
                 else:
                     c_val = trial.suggest_float("C", 0.01, 10.0, log=True)
                     model = LogisticRegression(
@@ -264,7 +274,14 @@ class MLEngine:
                         random_state=42
                     )
 
-                model.fit(X_tr, y_tr)
+                if model_name == "TabPFN" and HAS_TABPFN and len(X_tr) > 5000:
+                    idx_sample = np.random.choice(len(X_tr), 5000, replace=False)
+                    X_tr_fit = X_tr[idx_sample] if isinstance(X_tr, np.ndarray) else X_tr.iloc[idx_sample]
+                    y_tr_fit = y_tr[idx_sample] if isinstance(y_tr, np.ndarray) else y_tr.iloc[idx_sample]
+                else:
+                    X_tr_fit, y_tr_fit = X_tr, y_tr
+
+                model.fit(X_tr_fit, y_tr_fit)
                 y_proba = model.predict_proba(X_val)[:, 1]
                 fpr_arr, tpr_arr, _ = roc_curve(y_val, y_proba)
                 idx_5 = np.argmin(np.abs(fpr_arr - 0.05))
@@ -380,7 +397,7 @@ class MLEngine:
                 else:
                     X_train_res, y_train_res = X_train_scaled, y_train
 
-                model_families = ["LightGBM", "XGBoost", "CatBoost", "Random Forest", "Logistic Regression"]
+                model_families = ["LightGBM", "XGBoost", "CatBoost", "Random Forest", "Logistic Regression", "TabPFN"]
                 
                 for model_name in model_families:
                     if model_name == "LightGBM" and not HAS_LGBM:
@@ -388,6 +405,8 @@ class MLEngine:
                     if model_name == "XGBoost" and not HAS_XGB:
                         continue
                     if model_name == "CatBoost" and not HAS_CATBOOST:
+                        continue
+                    if model_name == "TabPFN" and not HAS_TABPFN:
                         continue
 
                     # Step 2: Optuna Tuning on Uncompressed Features
@@ -416,13 +435,22 @@ class MLEngine:
                         n_est = best_params.get("n_estimators", 150) if best_params else 150
                         max_d = best_params.get("max_depth", 12) if best_params else 12
                         base_model = RandomForestClassifier(n_estimators=n_est, max_depth=max_d, class_weight="balanced", random_state=42)
+                    elif model_name == "TabPFN" and HAS_TABPFN:
+                        n_ens = best_params.get("N_ensemble_configurations", 16) if best_params else 16
+                        base_model = TabPFNClassifier(N_ensemble_configurations=n_ens, device="cpu")
                     else:
                         c_v = best_params.get("C", 1.0) if best_params else 1.0
                         base_model = LogisticRegression(C=c_v, max_iter=1000, class_weight="balanced", random_state=42)
 
                     run_label = f"[{strategy_key}] {model_name}"
                     try:
-                        base_model.fit(X_train_res, y_train_res)
+                        if model_name == "TabPFN" and HAS_TABPFN and len(X_train_res) > 5000:
+                            idx_sample = np.random.choice(len(X_train_res), 5000, replace=False)
+                            X_train_fit = X_train_res[idx_sample] if isinstance(X_train_res, np.ndarray) else X_train_res.iloc[idx_sample]
+                            y_train_fit = y_train_res[idx_sample] if isinstance(y_train_res, np.ndarray) else y_train_res.iloc[idx_sample]
+                        else:
+                            X_train_fit, y_train_fit = X_train_res, y_train_res
+                        base_model.fit(X_train_fit, y_train_fit)
 
                         # Step 5: Probability Calibration (Isotonic / Sigmoid scaling)
                         try:
