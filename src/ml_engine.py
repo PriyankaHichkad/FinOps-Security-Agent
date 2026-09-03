@@ -276,11 +276,9 @@ class MLEngine:
     def train_pipeline(self):
         try:
             if not os.path.exists(DATA_PATH):
-                logger.warning(f"Dataset not found at {DATA_PATH}. Generating synthetic BAF benchmark dataset...")
-                self._generate_synthetic_baf_data()
-            else:
-                logger.info(f"Real dataset detected at {DATA_PATH} ({os.path.getsize(DATA_PATH)/1e6:.2f} MB). Skipping synthetic generation.")
+                raise FinGuardException(f"Real NeurIPS 2022 dataset Base.csv is required for training. File not found at: {DATA_PATH}")
 
+            logger.info(f"Real NeurIPS 2022 dataset detected at {DATA_PATH} ({os.path.getsize(DATA_PATH)/1e6:.2f} MB).")
             logger.info("Reading dataset for 5-Step Pipeline (Feature Engineering, Optuna Tuning, MLflow Top-4 Ensembling)...")
             df = pd.read_csv(DATA_PATH)
             
@@ -592,32 +590,6 @@ class MLEngine:
         except Exception as e:
             logger.error(f"Error in train_pipeline: {e}")
             raise FinGuardException(f"Pipeline training failure: {e}")
-
-    def _generate_synthetic_baf_data(self):
-        """
-        Generates a 1,000-row synthetic NeurIPS 2022 Bank Account Fraud dataset fallback
-        for CI environments where DVC raw dataset is not pulled.
-        """
-        try:
-            os.makedirs(os.path.dirname(DATA_PATH), exist_ok=True)
-            np.random.seed(42)
-            n_samples = 1000
-            
-            data = {}
-            for col in FEATURE_COLUMNS:
-                if col == "month":
-                    data[col] = np.random.choice([1, 2, 3, 4, 5, 6, 7], size=n_samples)
-                elif col in ["email_is_free", "phone_home_valid", "phone_mobile_valid", "has_other_cards", "foreign_request", "keep_alive_session"]:
-                    data[col] = np.random.choice([0.0, 1.0], size=n_samples)
-                else:
-                    data[col] = np.random.uniform(0.0, 100.0, size=n_samples)
-            
-            data["fraud_bool"] = np.random.choice([0, 1], size=n_samples, p=[0.95, 0.05])
-            df_synth = pd.DataFrame(data)
-            df_synth.to_csv(DATA_PATH, index=False)
-            logger.info(f"Generated synthetic fallback dataset at {DATA_PATH} ({n_samples} rows).")
-        except Exception as e:
-            logger.error(f"Failed to generate synthetic BAF dataset: {e}")
 
     def evaluate_all_variants(self):
         """
