@@ -94,7 +94,10 @@ class FinOpsBacktestEngine:
         X_sc = self.scaler.transform(X_test)
         X_pca = self.pca.transform(X_sc)
 
-        y_proba = self.model.predict_proba(X_pca)[:, 1]
+        try:
+            y_proba = self.model.predict_proba(X_sc)[:, 1]
+        except Exception:
+            y_proba = self.model.predict_proba(X_pca)[:, 1]
 
         # Calculate Unmitigated Exposure Loss (0% fraud caught)
         total_fraud_incidents = np.sum(y_test == 1)

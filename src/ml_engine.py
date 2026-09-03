@@ -92,7 +92,9 @@ RATIO_FEATURE_COLUMNS = [
     "velocity_acceleration_6h_24h",
     "velocity_acceleration_24h_4w",
     "credit_to_income_ratio",
-    "bank_tenure_to_age_ratio"
+    "bank_tenure_to_age_ratio",
+    "risk_interaction_score",
+    "dob_email_risk"
 ]
 
 ALL_FEATURE_COLUMNS = FEATURE_COLUMNS + RATIO_FEATURE_COLUMNS
@@ -100,8 +102,8 @@ ALL_FEATURE_COLUMNS = FEATURE_COLUMNS + RATIO_FEATURE_COLUMNS
 
 def _engineer_ratio_features(df):
     """
-    Step 1: Domain-specific Ratio Feature Engineering.
-    Calculates velocity acceleration and financial solvency ratios.
+    Step 1: Domain-specific Ratio & Interaction Feature Engineering.
+    Calculates velocity acceleration, solvency ratios, and risk interactions.
     """
     df_out = df.copy()
     v6 = df_out["velocity_6h"] if "velocity_6h" in df_out.columns else 0.0
@@ -111,11 +113,16 @@ def _engineer_ratio_features(df):
     credit = df_out["proposed_credit_limit"] if "proposed_credit_limit" in df_out.columns else 500.0
     bank_m = df_out["bank_months_count"] if "bank_months_count" in df_out.columns else 12.0
     age = df_out["customer_age"] if "customer_age" in df_out.columns else 35.0
+    device_fraud = df_out["device_fraud_count"] if "device_fraud_count" in df_out.columns else 0.0
+    dob_emails = df_out["date_of_birth_distinct_emails_4w"] if "date_of_birth_distinct_emails_4w" in df_out.columns else 0.0
+    email_free = df_out["email_is_free"] if "email_is_free" in df_out.columns else 0.0
 
     df_out["velocity_acceleration_6h_24h"] = v6 / (v24 + 1.0)
     df_out["velocity_acceleration_24h_4w"] = v24 / (v4w + 1.0)
     df_out["credit_to_income_ratio"] = credit / (inc + 0.01)
     df_out["bank_tenure_to_age_ratio"] = bank_m / (age * 12.0 + 1.0)
+    df_out["risk_interaction_score"] = device_fraud * v6
+    df_out["dob_email_risk"] = dob_emails * (email_free + 1.0)
     return df_out
 
 
@@ -259,9 +266,10 @@ class MLEngine:
 
                 model.fit(X_tr, y_tr)
                 y_proba = model.predict_proba(X_val)[:, 1]
-                precision_c, recall_c, _ = precision_recall_curve(y_val, y_proba)
-                pr_auc_score = auc(recall_c, precision_c)
-                return pr_auc_score
+                fpr_arr, tpr_arr, _ = roc_curve(y_val, y_proba)
+                idx_5 = np.argmin(np.abs(fpr_arr - 0.05))
+                recall_at_5_fpr = float(tpr_arr[idx_5])
+                return recall_at_5_fpr
             except Exception:
                 return 0.0
 
@@ -365,12 +373,12 @@ class MLEngine:
             for strategy_key, strategy_desc, sampler_inst in sampling_strategies:
                 if sampler_inst is not None:
                     try:
-                        X_train_res, y_train_res = sampler_inst.fit_resample(X_train_pca, y_train)
+                        X_train_res, y_train_res = sampler_inst.fit_resample(X_train_scaled, y_train)
                     except Exception as e_samp:
                         logger.warning(f"Sampler {strategy_key} notice: {e_samp}. Falling back to unresampled data.")
-                        X_train_res, y_train_res = X_train_pca, y_train
+                        X_train_res, y_train_res = X_train_scaled, y_train
                 else:
-                    X_train_res, y_train_res = X_train_pca, y_train
+                    X_train_res, y_train_res = X_train_scaled, y_train
 
                 model_families = ["LightGBM", "XGBoost", "CatBoost", "Random Forest", "Logistic Regression"]
                 
@@ -382,13 +390,13 @@ class MLEngine:
                     if model_name == "CatBoost" and not HAS_CATBOOST:
                         continue
 
-                    # Step 2: Optuna Tuning
-                    best_params = self._tune_with_optuna(model_name, X_train_res, y_train_res, X_test_pca, y_test, pos_weight)
+                    # Step 2: Optuna Tuning on Uncompressed Features
+                    best_params = self._tune_with_optuna(model_name, X_train_res, y_train_res, X_test_scaled, y_test, pos_weight)
 
                     # Build Model Instance with tuned or default params
                     if model_name == "LightGBM" and HAS_LGBM:
                         lr = best_params.get("learning_rate", 0.05) if best_params else 0.05
-                        n_est = best_params.get("n_estimators", 100) if best_params else 100
+                        n_est = best_params.get("n_estimators", 150) if best_params else 150
                         num_l = best_params.get("num_leaves", 31) if best_params else 31
                         max_d = best_params.get("max_depth", 6) if best_params else 6
                         spw = best_params.get("scale_pos_weight", pos_weight) if best_params else pos_weight
@@ -396,17 +404,17 @@ class MLEngine:
                     elif model_name == "XGBoost" and HAS_XGB:
                         lr = best_params.get("learning_rate", 0.05) if best_params else 0.05
                         max_d = best_params.get("max_depth", 6) if best_params else 6
-                        n_est = best_params.get("n_estimators", 100) if best_params else 100
+                        n_est = best_params.get("n_estimators", 150) if best_params else 150
                         spw = best_params.get("scale_pos_weight", pos_weight) if best_params else pos_weight
                         base_model = XGBClassifier(learning_rate=lr, max_depth=max_d, n_estimators=n_est, scale_pos_weight=spw, random_state=42, eval_metric="logloss")
                     elif model_name == "CatBoost" and HAS_CATBOOST:
                         depth = best_params.get("depth", 6) if best_params else 6
                         lr = best_params.get("learning_rate", 0.05) if best_params else 0.05
                         l2 = best_params.get("l2_leaf_reg", 3.0) if best_params else 3.0
-                        base_model = CatBoostClassifier(depth=depth, learning_rate=lr, l2_leaf_reg=l2, random_seed=42, verbose=0)
+                        base_model = CatBoostClassifier(depth=depth, learning_rate=lr, l2_leaf_reg=l2, scale_pos_weight=pos_weight, random_seed=42, verbose=0)
                     elif model_name == "Random Forest":
-                        n_est = best_params.get("n_estimators", 100) if best_params else 100
-                        max_d = best_params.get("max_depth", 10) if best_params else 10
+                        n_est = best_params.get("n_estimators", 150) if best_params else 150
+                        max_d = best_params.get("max_depth", 12) if best_params else 12
                         base_model = RandomForestClassifier(n_estimators=n_est, max_depth=max_d, class_weight="balanced", random_state=42)
                     else:
                         c_v = best_params.get("C", 1.0) if best_params else 1.0
@@ -424,7 +432,7 @@ class MLEngine:
                         except Exception:
                             model_inst = base_model
 
-                        y_proba = model_inst.predict_proba(X_test_pca)[:, 1]
+                        y_proba = model_inst.predict_proba(X_test_scaled)[:, 1]
                         y_pred = (y_proba >= 0.50).astype(int)
 
                         precision_curve, recall_curve, _ = precision_recall_curve(y_test, y_proba)
@@ -512,7 +520,7 @@ class MLEngine:
                 self.model = ChampionEnsemble([(baseline, 1.0, "Baseline_LR")])
 
             # Evaluate Champion Ensemble on Test Set
-            ens_proba = self.model.predict_proba(X_test_pca)[:, 1]
+            ens_proba = self.model.predict_proba(X_test_scaled)[:, 1]
             p_c, r_c, _ = precision_recall_curve(y_test, ens_proba)
             champion_pr_auc = float(auc(r_c, p_c))
             champion_roc_auc = float(roc_auc_score(y_test, ens_proba))
@@ -650,7 +658,10 @@ class MLEngine:
                 X_v_scaled = self.scaler.transform(X_v)
                 X_v_pca = self.pca.transform(X_v_scaled)
 
-                y_v_proba = self.model.predict_proba(X_v_pca)[:, 1]
+                try:
+                    y_v_proba = self.model.predict_proba(X_v_scaled)[:, 1]
+                except Exception:
+                    y_v_proba = self.model.predict_proba(X_v_pca)[:, 1]
 
                 prec_c, rec_c, _ = precision_recall_curve(y_v, y_v_proba)
                 pr_auc_v = float(auc(rec_c, prec_c))
@@ -738,16 +749,20 @@ class MLEngine:
                 row["credit_to_income_ratio"] = credit_val / (inc_val + 0.01)
             if "bank_tenure_to_age_ratio" in expected_cols and row.get("bank_tenure_to_age_ratio", 0.0) == 0.0:
                 row["bank_tenure_to_age_ratio"] = bank_m_val / (age_val * 12.0 + 1.0)
+            if "risk_interaction_score" in expected_cols and row.get("risk_interaction_score", 0.0) == 0.0:
+                row["risk_interaction_score"] = float(row.get("device_fraud_count", 0.0)) * v6_val
+            if "dob_email_risk" in expected_cols and row.get("dob_email_risk", 0.0) == 0.0:
+                row["dob_email_risk"] = float(row.get("date_of_birth_distinct_emails_4w", 0.0)) * (float(row.get("email_is_free", 0.0)) + 1.0)
 
             df_input = pd.DataFrame([row])[expected_cols]
             X_scaled = self.scaler.transform(df_input)
-            X_pca = self.pca.transform(X_scaled)
             
             try:
-                proba = float(self.model.predict_proba(X_pca)[0][1])
+                proba = float(self.model.predict_proba(X_scaled)[0][1])
             except Exception:
                 try:
-                    proba = float(self.model.predict(X_pca)[0])
+                    X_pca = self.pca.transform(X_scaled)
+                    proba = float(self.model.predict_proba(X_pca)[0][1])
                 except Exception:
                     proba = 0.15
 
