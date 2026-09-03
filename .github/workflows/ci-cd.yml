@@ -18,10 +18,10 @@ jobs:
     - name: Checkout Code Repository
       uses: actions/checkout@v4
 
-    - name: Set up Python 3.13
+    - name: Set up Python 3.11
       uses: actions/setup-python@v5
       with:
-        python-version: "3.13"
+        python-version: "3.11"
         cache: 'pip'
 
     - name: Set up Java OpenJDK 17
@@ -46,4 +46,4 @@ jobs:
 
     - name: Execute Automated PyTest Suite
       run: |
-        python -m pytest tests/ -v
+        python -m pytest tests/ -v --tb=short
