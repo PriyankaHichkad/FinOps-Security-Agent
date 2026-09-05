@@ -8,13 +8,14 @@ import joblib
 import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
-from sklearn.preprocessing import RobustScaler
+from sklearn.preprocessing import RobustScaler, QuantileTransformer
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import precision_recall_curve, auc, roc_auc_score, precision_score, recall_score, f1_score, roc_curve
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import LinearSVC
 from sklearn.calibration import CalibratedClassifierCV
+from scipy.stats import rankdata
 
 try:
     from lightgbm import LGBMClassifier
@@ -88,6 +89,8 @@ PCA_PATH = os.path.join(ARTIFACTS_DIR, "pca_transformer.pkl")
 METRICS_PATH = os.path.join(ARTIFACTS_DIR, "pca_metrics.json")
 COMPARISON_PATH = os.path.join(ARTIFACTS_DIR, "model_comparison_matrix.json")
 
+CATEGORICAL_COLUMNS = ["payment_type", "employment_status", "housing_status", "source", "device_os"]
+
 FEATURE_COLUMNS = [
     "income", "name_email_similarity", "prev_address_months_count",
     "current_address_months_count", "customer_age", "days_since_request",
@@ -105,7 +108,13 @@ RATIO_FEATURE_COLUMNS = [
     "credit_to_income_ratio",
     "bank_tenure_to_age_ratio",
     "risk_interaction_score",
-    "dob_email_risk"
+    "dob_email_risk",
+    "balcon_to_credit_ratio",
+    "address_tenure_ratio",
+    "geo_velocity_burst",
+    "log_velocity_6h",
+    "log_velocity_24h",
+    "log_velocity_4w"
 ]
 
 ALL_FEATURE_COLUMNS = FEATURE_COLUMNS + RATIO_FEATURE_COLUMNS
@@ -113,20 +122,24 @@ ALL_FEATURE_COLUMNS = FEATURE_COLUMNS + RATIO_FEATURE_COLUMNS
 
 def _engineer_ratio_features(df):
     """
-    Step 1: Domain-specific Ratio & Interaction Feature Engineering.
-    Calculates velocity acceleration, solvency ratios, and risk interactions.
+    Step 1: Domain-specific Ratio, Non-Linear & Categorical Interaction Feature Engineering.
+    Calculates velocity acceleration, solvency ratios, risk interactions, and dummy encodings safely.
     """
     df_out = df.copy()
-    v6 = df_out["velocity_6h"] if "velocity_6h" in df_out.columns else 0.0
-    v24 = df_out["velocity_24h"] if "velocity_24h" in df_out.columns else 0.0
-    v4w = df_out["velocity_4week"] if "velocity_4week" in df_out.columns else 0.0
-    inc = df_out["income"] if "income" in df_out.columns else 0.5
-    credit = df_out["proposed_credit_limit"] if "proposed_credit_limit" in df_out.columns else 500.0
-    bank_m = df_out["bank_months_count"] if "bank_months_count" in df_out.columns else 12.0
-    age = df_out["customer_age"] if "customer_age" in df_out.columns else 35.0
-    device_fraud = df_out["device_fraud_count"] if "device_fraud_count" in df_out.columns else 0.0
-    dob_emails = df_out["date_of_birth_distinct_emails_4w"] if "date_of_birth_distinct_emails_4w" in df_out.columns else 0.0
-    email_free = df_out["email_is_free"] if "email_is_free" in df_out.columns else 0.0
+    v6 = np.maximum(0, df_out["velocity_6h"]) if "velocity_6h" in df_out.columns else 0.0
+    v24 = np.maximum(0, df_out["velocity_24h"]) if "velocity_24h" in df_out.columns else 0.0
+    v4w = np.maximum(0, df_out["velocity_4w"]) if "velocity_4w" in df_out.columns else (np.maximum(0, df_out["velocity_4week"]) if "velocity_4week" in df_out.columns else 0.0)
+    inc = np.maximum(0, df_out["income"]) if "income" in df_out.columns else 0.5
+    credit = np.maximum(0, df_out["proposed_credit_limit"]) if "proposed_credit_limit" in df_out.columns else 500.0
+    bank_m = np.maximum(0, df_out["bank_months_count"]) if "bank_months_count" in df_out.columns else 12.0
+    age = np.maximum(0, df_out["customer_age"]) if "customer_age" in df_out.columns else 35.0
+    device_fraud = np.maximum(0, df_out["device_fraud_count"]) if "device_fraud_count" in df_out.columns else 0.0
+    dob_emails = np.maximum(0, df_out["date_of_birth_distinct_emails_4w"]) if "date_of_birth_distinct_emails_4w" in df_out.columns else 0.0
+    email_free = np.maximum(0, df_out["email_is_free"]) if "email_is_free" in df_out.columns else 0.0
+    intended_balcon = np.maximum(0, df_out["intended_balcon_amount"]) if "intended_balcon_amount" in df_out.columns else 0.0
+    prev_addr = np.maximum(0, df_out["prev_address_months_count"]) if "prev_address_months_count" in df_out.columns else 12.0
+    curr_addr = np.maximum(0, df_out["current_address_months_count"]) if "current_address_months_count" in df_out.columns else 48.0
+    zip_4w = np.maximum(0, df_out["zip_count_4w"]) if "zip_count_4w" in df_out.columns else 1000.0
 
     df_out["velocity_acceleration_6h_24h"] = v6 / (v24 + 1.0)
     df_out["velocity_acceleration_24h_4w"] = v24 / (v4w + 1.0)
@@ -134,13 +147,34 @@ def _engineer_ratio_features(df):
     df_out["bank_tenure_to_age_ratio"] = bank_m / (age * 12.0 + 1.0)
     df_out["risk_interaction_score"] = device_fraud * v6
     df_out["dob_email_risk"] = dob_emails * (email_free + 1.0)
+    df_out["balcon_to_credit_ratio"] = intended_balcon / (credit + 1.0)
+    df_out["address_tenure_ratio"] = prev_addr / (curr_addr + 1.0)
+    df_out["geo_velocity_burst"] = zip_4w * v6
+    df_out["log_velocity_6h"] = np.log1p(v6)
+    df_out["log_velocity_24h"] = np.log1p(v24)
+    df_out["log_velocity_4w"] = np.log1p(v4w)
+
+    # Frequency encoding for categorical columns
+    for cat in CATEGORICAL_COLUMNS:
+        if cat in df_out.columns:
+            freq_map = df_out[cat].value_counts(normalize=True).to_dict()
+            df_out[f"{cat}_freq"] = df_out[cat].map(freq_map).fillna(0.0)
+
+    # One-Hot Encoding for categorical features
+    cat_present = [c for c in CATEGORICAL_COLUMNS if c in df_out.columns]
+    if cat_present:
+        df_out = pd.get_dummies(df_out, columns=cat_present, drop_first=False)
+
+    # Clean any accidental Inf / -Inf / NaN values
+    df_out = df_out.replace([np.inf, -np.inf], np.nan)
     return df_out
 
 
 class ChampionEnsemble:
     """
-    Step 4: Multi-Model Weighted Stacking Ensemble.
-    Blends prediction probabilities across the Top 4 champion models.
+    Step 4: Multi-Model Weighted Stacking Ensemble with Percentile Rank-Averaging.
+    Blends prediction probabilities across the Top 4 champion models using rank normalization
+    to sharpen top-percentile fraud score separation at 5% FPR.
     """
     def __init__(self, models_and_weights):
         # models_and_weights: list of (model, weight, model_name)
@@ -151,7 +185,7 @@ class ChampionEnsemble:
         if total_weight <= 0:
             total_weight = 1.0
 
-        weighted_probs = np.zeros((X.shape[0], 2))
+        weighted_rank_scores = np.zeros(X.shape[0])
         for model, weight, name in self.models_and_weights:
             try:
                 if "TabPFN" in str(type(model)) or "TabPFN" in str(name):
@@ -178,12 +212,19 @@ class ChampionEnsemble:
                 preds = model.predict(X)
                 probs = np.column_stack([1 - preds, preds])
 
-            weighted_probs += (weight / total_weight) * probs
-        return weighted_probs
+            p_positive = probs[:, 1]
+            if len(p_positive) > 1:
+                ranks = rankdata(p_positive) / float(len(p_positive))
+            else:
+                ranks = p_positive
+            weighted_rank_scores += (weight / total_weight) * ranks
+
+        final_probs = np.column_stack([1.0 - weighted_rank_scores, weighted_rank_scores])
+        return final_probs
 
     def predict(self, X):
         probs = self.predict_proba(X)
-        return (probs[:, 1] >= 0.50).astype(int)
+        return (probs[:, 1] >= 0.95).astype(int)
 
 
 class MLEngine:
@@ -235,34 +276,40 @@ class MLEngine:
             try:
                 if model_name == "LightGBM" and HAS_LGBM:
                     lr = trial.suggest_float("learning_rate", 0.01, 0.2, log=True)
-                    n_est = trial.suggest_int("n_estimators", 50, 200, step=50)
-                    num_leaves = trial.suggest_int("num_leaves", 15, 63)
-                    max_d = trial.suggest_int("max_depth", 3, 10)
-                    spw = trial.suggest_float("scale_pos_weight", 1.0, float(pos_weight))
+                    n_est = trial.suggest_int("n_estimators", 50, 250, step=50)
+                    num_leaves = trial.suggest_int("num_leaves", 15, 127)
+                    max_d = trial.suggest_int("max_depth", 3, 12)
+                    spw = trial.suggest_float("scale_pos_weight", 1.0, float(pos_weight * 3.0))
+                    min_child = trial.suggest_int("min_child_samples", 10, 100)
                     model = LGBMClassifier(
                         learning_rate=lr,
                         n_estimators=n_est,
                         num_leaves=num_leaves,
                         max_depth=max_d,
                         scale_pos_weight=spw,
+                        min_child_samples=min_child,
                         random_state=42,
                         verbosity=-1
                     )
                 elif model_name == "XGBoost" and HAS_XGB:
                     lr = trial.suggest_float("learning_rate", 0.01, 0.2, log=True)
-                    max_d = trial.suggest_int("max_depth", 3, 8)
-                    n_est = trial.suggest_int("n_estimators", 50, 150, step=50)
-                    spw = trial.suggest_float("scale_pos_weight", 1.0, float(pos_weight))
+                    max_d = trial.suggest_int("max_depth", 3, 10)
+                    n_est = trial.suggest_int("n_estimators", 50, 200, step=50)
+                    spw = trial.suggest_float("scale_pos_weight", 1.0, float(pos_weight * 3.0))
+                    subsample = trial.suggest_float("subsample", 0.6, 1.0)
+                    colsample = trial.suggest_float("colsample_bytree", 0.6, 1.0)
                     model = XGBClassifier(
                         learning_rate=lr,
                         max_depth=max_d,
                         n_estimators=n_est,
                         scale_pos_weight=spw,
+                        subsample=subsample,
+                        colsample_bytree=colsample,
                         random_state=42,
                         eval_metric="logloss"
                     )
                 elif model_name == "CatBoost" and HAS_CATBOOST:
-                    depth = trial.suggest_int("depth", 4, 8)
+                    depth = trial.suggest_int("depth", 4, 10)
                     lr = trial.suggest_float("learning_rate", 0.01, 0.2, log=True)
                     l2_reg = trial.suggest_float("l2_leaf_reg", 1.0, 10.0)
                     model = CatBoostClassifier(
@@ -309,7 +356,13 @@ class MLEngine:
                 else:
                     X_tr_fit, y_tr_fit = X_tr, y_tr
 
-                model.fit(X_tr_fit, y_tr_fit)
+                if model_name == "TabPFN" and HAS_TABPFN:
+                    qt = QuantileTransformer(output_distribution="normal", random_state=42, n_quantiles=min(1000, len(X_tr_fit)))
+                    X_tr_fit_tab = qt.fit_transform(X_tr_fit)
+                    model.fit(X_tr_fit_tab, y_tr_fit)
+                else:
+                    model.fit(X_tr_fit, y_tr_fit)
+
                 if model_name == "TabPFN" and HAS_TABPFN and len(X_val) > 1000:
                     y_val_arr = y_val.values if hasattr(y_val, "values") else np.array(y_val)
                     if len(np.unique(y_val_arr)) > 1:
@@ -318,7 +371,8 @@ class MLEngine:
                         )
                     else:
                         X_val_eval, y_val_eval = X_val[:1000], y_val_arr[:1000]
-                    y_proba = model.predict_proba(X_val_eval)[:, 1]
+                    X_val_eval_tab = qt.transform(X_val_eval)
+                    y_proba = model.predict_proba(X_val_eval_tab)[:, 1]
                     fpr_arr, tpr_arr, _ = roc_curve(y_val_eval, y_proba)
                 else:
                     y_proba = model.predict_proba(X_val)[:, 1]
@@ -350,7 +404,7 @@ class MLEngine:
             logger.info("Reading dataset for 5-Step Pipeline (Feature Engineering, Optuna Tuning, MLflow Top-4 Ensembling)...")
             df = pd.read_csv(DATA_PATH)
             
-            # Step 1: Ratio Feature Engineering
+            # Step 1: Ratio, Non-Linear & Categorical Interaction Feature Engineering
             df = _engineer_ratio_features(df)
 
             if len(df) > 100000 and "fraud_bool" in df.columns:
@@ -359,8 +413,10 @@ class MLEngine:
                     lambda x: x.sample(min(len(x), int(100000 * len(x) / len(df))), random_state=42)
                 )
 
-            existing_cols = [col for col in ALL_FEATURE_COLUMNS if col in df.columns]
-            X_all = df[existing_cols].copy().fillna(df[existing_cols].median(numeric_only=True))
+            numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+            existing_cols = [col for col in numeric_cols if col not in ["fraud_bool", "month", "id"]]
+            X_all = df[existing_cols].copy().replace([np.inf, -np.inf], np.nan)
+            X_all = X_all.fillna(X_all.median(numeric_only=True)).fillna(0.0)
             y_all = df["fraud_bool"] if "fraud_bool" in df.columns else np.random.choice([0, 1], size=len(df), p=[0.95, 0.05])
 
             # NeurIPS 2022 Standard: Out-of-Time (OOT) Temporal Split (Months 0-5 Train, Months 6-7 Test)
@@ -460,13 +516,16 @@ class MLEngine:
                         num_l = best_params.get("num_leaves", 31) if best_params else 31
                         max_d = best_params.get("max_depth", 6) if best_params else 6
                         spw = best_params.get("scale_pos_weight", pos_weight) if best_params else pos_weight
-                        base_model = LGBMClassifier(learning_rate=lr, n_estimators=n_est, num_leaves=num_l, max_depth=max_d, scale_pos_weight=spw, random_state=42, verbosity=-1)
+                        min_child = best_params.get("min_child_samples", 20) if best_params else 20
+                        base_model = LGBMClassifier(learning_rate=lr, n_estimators=n_est, num_leaves=num_l, max_depth=max_d, scale_pos_weight=spw, min_child_samples=min_child, random_state=42, verbosity=-1)
                     elif model_name == "XGBoost" and HAS_XGB:
                         lr = best_params.get("learning_rate", 0.05) if best_params else 0.05
                         max_d = best_params.get("max_depth", 6) if best_params else 6
                         n_est = best_params.get("n_estimators", 150) if best_params else 150
                         spw = best_params.get("scale_pos_weight", pos_weight) if best_params else pos_weight
-                        base_model = XGBClassifier(learning_rate=lr, max_depth=max_d, n_estimators=n_est, scale_pos_weight=spw, random_state=42, eval_metric="logloss")
+                        subsample = best_params.get("subsample", 0.8) if best_params else 0.8
+                        colsample = best_params.get("colsample_bytree", 0.8) if best_params else 0.8
+                        base_model = XGBClassifier(learning_rate=lr, max_depth=max_d, n_estimators=n_est, scale_pos_weight=spw, subsample=subsample, colsample_bytree=colsample, random_state=42, eval_metric="logloss")
                     elif model_name == "CatBoost" and HAS_CATBOOST:
                         depth = best_params.get("depth", 6) if best_params else 6
                         lr = best_params.get("learning_rate", 0.05) if best_params else 0.05
@@ -501,18 +560,21 @@ class MLEngine:
                         else:
                             X_train_fit, y_train_fit = X_train_res, y_train_res
 
-                        base_model.fit(X_train_fit, y_train_fit)
+                        if model_name == "TabPFN" and HAS_TABPFN:
+                            qt = QuantileTransformer(output_distribution="normal", random_state=42, n_quantiles=min(1000, len(X_train_fit)))
+                            X_train_fit_tab = qt.fit_transform(X_train_fit)
+                            base_model.fit(X_train_fit_tab, y_train_fit)
+                            model_inst = base_model
+                        else:
+                            base_model.fit(X_train_fit, y_train_fit)
 
-                        # Step 5: Probability Calibration (Isotonic / Sigmoid scaling)
-                        if model_name != "TabPFN":
+                            # Step 5: Probability Calibration (Isotonic / Sigmoid scaling)
                             try:
                                 calibrated_model = CalibratedClassifierCV(estimator=base_model, method="sigmoid", cv="prefit")
                                 calibrated_model.fit(X_train_fit, y_train_fit)
                                 model_inst = calibrated_model
                             except Exception:
                                 model_inst = base_model
-                        else:
-                            model_inst = base_model
 
                         if model_name == "TabPFN" and HAS_TABPFN:
                             n_samp = min(len(X_test_scaled), 1000)
@@ -526,7 +588,8 @@ class MLEngine:
                                 X_test_eval = X_test_scaled[:n_samp]
                                 y_test_curr = y_test_np[:n_samp]
                                 idx_eval = np.arange(n_samp)
-                            y_proba = model_inst.predict_proba(X_test_eval)[:, 1]
+                            X_test_eval_tab = qt.transform(X_test_eval)
+                            y_proba = model_inst.predict_proba(X_test_eval_tab)[:, 1]
                         else:
                             X_test_eval = X_test_scaled
                             y_test_curr = y_test
