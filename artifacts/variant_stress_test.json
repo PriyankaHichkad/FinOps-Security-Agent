@@ -1,38 +1,38 @@
 [
   {
     "variant": "Base.csv",
-    "pr_auc": 0.1045,
-    "roc_auc": 0.8489,
+    "pr_auc": 0.1033,
+    "roc_auc": 0.8497,
     "recall_at_5_fpr": 0.4332
   },
   {
     "variant": "Variant I.csv",
-    "pr_auc": 0.0857,
-    "roc_auc": 0.8402,
-    "recall_at_5_fpr": 0.3744
+    "pr_auc": 0.0661,
+    "roc_auc": 0.8188,
+    "recall_at_5_fpr": 0.3695
   },
   {
     "variant": "Variant II.csv",
-    "pr_auc": 0.1403,
-    "roc_auc": 0.8619,
-    "recall_at_5_fpr": 0.4537
+    "pr_auc": 0.1264,
+    "roc_auc": 0.8578,
+    "recall_at_5_fpr": 0.4405
   },
   {
     "variant": "Variant III.csv",
-    "pr_auc": 0.0989,
-    "roc_auc": 0.8353,
-    "recall_at_5_fpr": 0.4366
+    "pr_auc": 0.0975,
+    "roc_auc": 0.8166,
+    "recall_at_5_fpr": 0.385
   },
   {
     "variant": "Variant IV.csv",
-    "pr_auc": 0.1321,
-    "roc_auc": 0.8713,
-    "recall_at_5_fpr": 0.4643
+    "pr_auc": 0.11,
+    "roc_auc": 0.8666,
+    "recall_at_5_fpr": 0.4062
   },
   {
     "variant": "Variant V.csv",
-    "pr_auc": 0.0836,
-    "roc_auc": 0.8313,
-    "recall_at_5_fpr": 0.3667
+    "pr_auc": 0.0877,
+    "roc_auc": 0.819,
+    "recall_at_5_fpr": 0.3524
   }
 ]

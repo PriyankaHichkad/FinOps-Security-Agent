@@ -1,4 +1,8 @@
 import os
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
 import json
 import joblib
 import numpy as np
@@ -148,14 +152,29 @@ class ChampionEnsemble:
             total_weight = 1.0
 
         weighted_probs = np.zeros((X.shape[0], 2))
-        for model, weight, _ in self.models_and_weights:
+        for model, weight, name in self.models_and_weights:
             try:
-                probs = model.predict_proba(X)
-                if probs.ndim == 1:
-                    probs = np.column_stack([1 - probs, probs])
-                elif probs.shape[1] == 1:
-                    probs = np.column_stack([1 - probs[:, 0], probs[:, 0]])
-            except Exception:
+                if "TabPFN" in str(type(model)) or "TabPFN" in str(name):
+                    # Chunked predict_proba for TabPFN to prevent CPU memory spikes
+                    batch_size = 2000
+                    probs_list = []
+                    for b_i in range(0, X.shape[0], batch_size):
+                        X_chunk = X[b_i:b_i + batch_size]
+                        probs_chunk = model.predict_proba(X_chunk)
+                        if probs_chunk.ndim == 1:
+                            probs_chunk = np.column_stack([1 - probs_chunk, probs_chunk])
+                        elif probs_chunk.shape[1] == 1:
+                            probs_chunk = np.column_stack([1 - probs_chunk[:, 0], probs_chunk[:, 0]])
+                        probs_list.append(probs_chunk)
+                    probs = np.vstack(probs_list)
+                else:
+                    probs = model.predict_proba(X)
+                    if probs.ndim == 1:
+                        probs = np.column_stack([1 - probs, probs])
+                    elif probs.shape[1] == 1:
+                        probs = np.column_stack([1 - probs[:, 0], probs[:, 0]])
+            except Exception as e_p:
+                logger.warning(f"Prediction fallback for {name}: {e_p}")
                 preds = model.predict(X)
                 probs = np.column_stack([1 - preds, preds])
 
@@ -263,8 +282,13 @@ class MLEngine:
                         random_state=42
                     )
                 elif model_name == "TabPFN" and HAS_TABPFN:
-                    n_ens = trial.suggest_int("N_ensemble_configurations", 4, 32, step=4)
-                    model = TabPFNClassifier(N_ensemble_configurations=n_ens, device="cpu")
+                    try:
+                        model = TabPFNClassifier(ignore_pretraining_limits=True, device="cpu")
+                    except Exception:
+                        try:
+                            model = TabPFNClassifier(ignore_pretraining_limits=True)
+                        except Exception:
+                            model = TabPFNClassifier()
                 else:
                     c_val = trial.suggest_float("C", 0.01, 10.0, log=True)
                     model = LogisticRegression(
@@ -274,16 +298,31 @@ class MLEngine:
                         random_state=42
                     )
 
-                if model_name == "TabPFN" and HAS_TABPFN and len(X_tr) > 5000:
-                    idx_sample = np.random.choice(len(X_tr), 5000, replace=False)
-                    X_tr_fit = X_tr[idx_sample] if isinstance(X_tr, np.ndarray) else X_tr.iloc[idx_sample]
-                    y_tr_fit = y_tr[idx_sample] if isinstance(y_tr, np.ndarray) else y_tr.iloc[idx_sample]
+                if model_name == "TabPFN" and HAS_TABPFN and len(X_tr) > 2000:
+                    y_tr_arr = y_tr.values if hasattr(y_tr, "values") else np.array(y_tr)
+                    if len(np.unique(y_tr_arr)) > 1:
+                        _, X_tr_fit, _, y_tr_fit = train_test_split(
+                            X_tr, y_tr_arr, test_size=2000, random_state=42, stratify=y_tr_arr
+                        )
+                    else:
+                        X_tr_fit, y_tr_fit = X_tr[:2000], y_tr_arr[:2000]
                 else:
                     X_tr_fit, y_tr_fit = X_tr, y_tr
 
                 model.fit(X_tr_fit, y_tr_fit)
-                y_proba = model.predict_proba(X_val)[:, 1]
-                fpr_arr, tpr_arr, _ = roc_curve(y_val, y_proba)
+                if model_name == "TabPFN" and HAS_TABPFN and len(X_val) > 1000:
+                    y_val_arr = y_val.values if hasattr(y_val, "values") else np.array(y_val)
+                    if len(np.unique(y_val_arr)) > 1:
+                        _, X_val_eval, _, y_val_eval = train_test_split(
+                            X_val, y_val_arr, test_size=1000, random_state=42, stratify=y_val_arr
+                        )
+                    else:
+                        X_val_eval, y_val_eval = X_val[:1000], y_val_arr[:1000]
+                    y_proba = model.predict_proba(X_val_eval)[:, 1]
+                    fpr_arr, tpr_arr, _ = roc_curve(y_val_eval, y_proba)
+                else:
+                    y_proba = model.predict_proba(X_val)[:, 1]
+                    fpr_arr, tpr_arr, _ = roc_curve(y_val, y_proba)
                 idx_5 = np.argmin(np.abs(fpr_arr - 0.05))
                 recall_at_5_fpr = float(tpr_arr[idx_5])
                 return recall_at_5_fpr
@@ -292,7 +331,9 @@ class MLEngine:
 
         try:
             study = optuna.create_study(direction="maximize")
-            study.optimize(objective, n_trials=8, timeout=30)
+            max_trials = 1 if model_name == "TabPFN" else 8
+            timeout_val = 120 if model_name == "TabPFN" else 30
+            study.optimize(objective, n_trials=max_trials, timeout=timeout_val)
             return study.best_params
         except Exception as e_opt:
             logger.warning(f"Optuna tuning notice for {model_name}: {e_opt}")
@@ -397,7 +438,7 @@ class MLEngine:
                 else:
                     X_train_res, y_train_res = X_train_scaled, y_train
 
-                model_families = ["LightGBM", "XGBoost", "CatBoost", "Random Forest", "Logistic Regression", "TabPFN"]
+                model_families = ["TabPFN", "CatBoost", "LightGBM", "XGBoost", "Random Forest", "Logistic Regression"]
                 
                 for model_name in model_families:
                     if model_name == "LightGBM" and not HAS_LGBM:
@@ -436,52 +477,82 @@ class MLEngine:
                         max_d = best_params.get("max_depth", 12) if best_params else 12
                         base_model = RandomForestClassifier(n_estimators=n_est, max_depth=max_d, class_weight="balanced", random_state=42)
                     elif model_name == "TabPFN" and HAS_TABPFN:
-                        n_ens = best_params.get("N_ensemble_configurations", 16) if best_params else 16
-                        base_model = TabPFNClassifier(N_ensemble_configurations=n_ens, device="cpu")
+                        try:
+                            base_model = TabPFNClassifier(ignore_pretraining_limits=True, device="cpu")
+                        except Exception:
+                            try:
+                                base_model = TabPFNClassifier(ignore_pretraining_limits=True)
+                            except Exception:
+                                base_model = TabPFNClassifier()
                     else:
                         c_v = best_params.get("C", 1.0) if best_params else 1.0
                         base_model = LogisticRegression(C=c_v, max_iter=1000, class_weight="balanced", random_state=42)
 
                     run_label = f"[{strategy_key}] {model_name}"
                     try:
-                        if model_name == "TabPFN" and HAS_TABPFN and len(X_train_res) > 5000:
-                            idx_sample = np.random.choice(len(X_train_res), 5000, replace=False)
-                            X_train_fit = X_train_res[idx_sample] if isinstance(X_train_res, np.ndarray) else X_train_res.iloc[idx_sample]
-                            y_train_fit = y_train_res[idx_sample] if isinstance(y_train_res, np.ndarray) else y_train_res.iloc[idx_sample]
+                        if model_name == "TabPFN" and HAS_TABPFN and len(X_train_res) > 2000:
+                            y_tr_res_arr = y_train_res.values if hasattr(y_train_res, "values") else np.array(y_train_res)
+                            if len(np.unique(y_tr_res_arr)) > 1:
+                                _, X_train_fit, _, y_train_fit = train_test_split(
+                                    X_train_res, y_tr_res_arr, test_size=2000, random_state=42, stratify=y_tr_res_arr
+                                )
+                            else:
+                                X_train_fit, y_train_fit = X_train_res[:2000], y_tr_res_arr[:2000]
                         else:
                             X_train_fit, y_train_fit = X_train_res, y_train_res
+
                         base_model.fit(X_train_fit, y_train_fit)
 
                         # Step 5: Probability Calibration (Isotonic / Sigmoid scaling)
-                        try:
-                            calibrated_model = CalibratedClassifierCV(estimator=base_model, method="sigmoid", cv="prefit")
-                            calibrated_model.fit(X_train_res, y_train_res)
-                            model_inst = calibrated_model
-                        except Exception:
+                        if model_name != "TabPFN":
+                            try:
+                                calibrated_model = CalibratedClassifierCV(estimator=base_model, method="sigmoid", cv="prefit")
+                                calibrated_model.fit(X_train_fit, y_train_fit)
+                                model_inst = calibrated_model
+                            except Exception:
+                                model_inst = base_model
+                        else:
                             model_inst = base_model
 
-                        y_proba = model_inst.predict_proba(X_test_scaled)[:, 1]
+                        if model_name == "TabPFN" and HAS_TABPFN:
+                            n_samp = min(len(X_test_scaled), 1000)
+                            y_test_np = y_test.values if hasattr(y_test, "values") else np.array(y_test)
+                            if len(np.unique(y_test_np)) > 1:
+                                _, X_test_eval, _, y_test_curr, _, idx_eval = train_test_split(
+                                    X_test_scaled, y_test_np, np.arange(len(y_test_np)),
+                                    test_size=n_samp, random_state=42, stratify=y_test_np
+                                )
+                            else:
+                                X_test_eval = X_test_scaled[:n_samp]
+                                y_test_curr = y_test_np[:n_samp]
+                                idx_eval = np.arange(n_samp)
+                            y_proba = model_inst.predict_proba(X_test_eval)[:, 1]
+                        else:
+                            X_test_eval = X_test_scaled
+                            y_test_curr = y_test
+                            idx_eval = np.arange(len(X_test_scaled))
+                            y_proba = model_inst.predict_proba(X_test_scaled)[:, 1]
                         y_pred = (y_proba >= 0.50).astype(int)
 
-                        precision_curve, recall_curve, _ = precision_recall_curve(y_test, y_proba)
+                        precision_curve, recall_curve, _ = precision_recall_curve(y_test_curr, y_proba)
                         pr_auc_val = float(auc(recall_curve, precision_curve))
-                        roc_auc_val = float(roc_auc_score(y_test, y_proba))
-                        prec = float(precision_score(y_test, y_pred, zero_division=0))
-                        rec = float(recall_score(y_test, y_pred, zero_division=0))
-                        f1 = float(f1_score(y_test, y_pred, zero_division=0))
+                        roc_auc_val = float(roc_auc_score(y_test_curr, y_proba))
+                        prec = float(precision_score(y_test_curr, y_pred, zero_division=0))
+                        rec = float(recall_score(y_test_curr, y_pred, zero_division=0))
+                        f1 = float(f1_score(y_test_curr, y_pred, zero_division=0))
 
                         # NeurIPS 2022 Primary Metric: Recall @ 5% FPR
-                        fpr_arr, tpr_arr, thresh_arr = roc_curve(y_test, y_proba)
+                        fpr_arr, tpr_arr, thresh_arr = roc_curve(y_test_curr, y_proba)
                         idx_5 = np.argmin(np.abs(fpr_arr - 0.05))
                         recall_at_5_fpr = float(tpr_arr[idx_5])
 
                         fairness_disparity = 1.0
                         if hasattr(self, "test_df_raw") and "customer_age" in self.test_df_raw.columns:
-                            age_vals = self.test_df_raw["customer_age"].values
+                            age_vals = self.test_df_raw["customer_age"].values[idx_eval]
                             pred_5 = (y_proba >= float(thresh_arr[idx_5])).astype(int)
-                            y_test_arr = np.array(y_test)
-                            mask_sr = (age_vals > 50) & (y_test_arr == 0)
-                            mask_yr = (age_vals <= 50) & (y_test_arr == 0)
+                            y_test_eval_arr = np.array(y_test_curr)
+                            mask_sr = (age_vals > 50) & (y_test_eval_arr == 0)
+                            mask_yr = (age_vals <= 50) & (y_test_eval_arr == 0)
                             fpr_sr = float(np.mean(pred_5[mask_sr] == 1)) if np.sum(mask_sr) > 0 else 0.05
                             fpr_yr = float(np.mean(pred_5[mask_yr] == 1)) if np.sum(mask_yr) > 0 else 0.05
                             fairness_disparity = round(fpr_sr / max(fpr_yr, 1e-6), 2)
