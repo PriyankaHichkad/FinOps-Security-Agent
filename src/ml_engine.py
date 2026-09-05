@@ -283,10 +283,10 @@ class MLEngine:
                     )
                 elif model_name == "TabPFN" and HAS_TABPFN:
                     try:
-                        model = TabPFNClassifier(ignore_pretraining_limits=True, device="cpu")
+                        model = TabPFNClassifier(ignore_pretraining_limits=True, device="cpu", n_estimators=2)
                     except Exception:
                         try:
-                            model = TabPFNClassifier(ignore_pretraining_limits=True)
+                            model = TabPFNClassifier(ignore_pretraining_limits=True, n_estimators=2)
                         except Exception:
                             model = TabPFNClassifier()
                 else:
@@ -478,10 +478,10 @@ class MLEngine:
                         base_model = RandomForestClassifier(n_estimators=n_est, max_depth=max_d, class_weight="balanced", random_state=42)
                     elif model_name == "TabPFN" and HAS_TABPFN:
                         try:
-                            base_model = TabPFNClassifier(ignore_pretraining_limits=True, device="cpu")
+                            base_model = TabPFNClassifier(ignore_pretraining_limits=True, device="cpu", n_estimators=2)
                         except Exception:
                             try:
-                                base_model = TabPFNClassifier(ignore_pretraining_limits=True)
+                                base_model = TabPFNClassifier(ignore_pretraining_limits=True, n_estimators=2)
                             except Exception:
                                 base_model = TabPFNClassifier()
                     else:
