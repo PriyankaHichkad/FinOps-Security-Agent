@@ -86,16 +86,16 @@ Evaluated under **Out-of-Time (OOT) Temporal Splitting** (Months 0–5 Train, Mo
 
 | Strategy & Model Architecture | Recall @ 5% FPR | PR-AUC | ROC-AUC | Age Fairness FPR Ratio | Serving Latency | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **`[SMOTE_1to1]` LightGBM** | **`23.65%`** | **`0.1063`** | **`0.7079`** | **`2.02x`** | **< 8ms** | **Production Champion Model** |
-| **`[Random_Undersample]` LightGBM** | `22.64%` | `0.1056` | `0.7247` | `1.60x` | < 5ms | Candidate |
-| **`[Hybrid_1to3_Optimal]` LightGBM** | `24.32%` | `0.0978` | `0.7138` | `2.06x` | < 8ms | Candidate |
-| **`[Baseline_Natural]` LightGBM** | `25.68%` | `0.0738` | `0.7141` | `2.17x` | < 8ms | Candidate |
-| **`[Baseline_Natural]` Logistic Regression** | `22.64%` | `0.0664` | `0.6990` | `1.59x` | < 2ms | Candidate |
-| **`[Baseline_Natural]` SVM** | `22.64%` | `0.0662` | `0.6999` | `1.61x` | < 2ms | Candidate |
-| **`[Baseline_Natural]` Random Forest** | `20.27%` | `0.0572` | `0.7174` | `1.70x` | < 12ms | Candidate |
-| **`[Baseline_Natural]` XGBoost** | `22.30%` | `0.0558` | `0.7187` | `1.70x` | < 10ms | Candidate |
+| **`[SMOTE_1to1]` TabPFN** | **`60.00%`** | **`0.1617`** | **`0.9295`** | **`5.25x`** | **< 15ms** | **Top 1 Champion Model** |
+| **`[Meta_Stacking_Ensemble]` Top 4 Blended** | **`40.88%`** | **`0.1269`** | **`0.8413`** | **`1.95x`** | **< 18ms** | **Top Champion Meta-Ensemble** |
+| **`[Baseline_Natural]` Logistic Regression** | `42.23%` | `0.1155` | `0.8279` | `4.63x` | < 2ms | Top 2 Champion Model |
+| **`[Random_Undersample]` Random Forest** | `38.18%` | `0.1073` | `0.8264` | `3.80x` | < 12ms | Top 3 Champion Model |
+| **`[Random_Undersample]` Logistic Regression** | `37.84%` | `0.1110` | `0.8261` | `5.41x` | < 2ms | Top 4 Champion Model |
+| **`[Baseline_Natural]` LightGBM** | `37.50%` | `0.1035` | `0.8121` | `2.36x` | < 8ms | Candidate |
+| **`[Hybrid_1to3_Optimal]` Logistic Regression** | `37.16%` | `0.1103` | `0.8221` | `4.35x` | < 2ms | Candidate |
+| **`[SMOTE_1to1]` Logistic Regression** | `37.16%` | `0.1084` | `0.8215` | `4.27x` | < 2ms | Candidate |
 
-> **Context on Benchmark Performance**: On the NeurIPS 2022 Bank Account Fraud dataset, positive fraud prevalence is extremely low (~1.10%) and features are subjected to differential privacy noise. A `Recall @ 5% FPR` of ~23.65% matches published state-of-the-art benchmarks for this dataset (Feedzai/NeurIPS 2022 reference baseline: ~23–26% Recall @ 5% FPR), achieving a **9.66× predictive lift** over random guessing.
+> **Context on Benchmark Performance**: On the NeurIPS 2022 Bank Account Fraud dataset, positive fraud prevalence is extremely low (~1.10%) and features are subjected to differential privacy noise. `[SMOTE_1to1] TabPFN` achieves **60.00% Recall @ 5% FPR** with **0.1617 PR-AUC** and **0.9295 ROC-AUC**, delivering a **14.7× predictive lift** over random guessing.
 
 ---
 

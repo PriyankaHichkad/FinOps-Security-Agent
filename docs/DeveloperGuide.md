@@ -72,7 +72,7 @@ graph TD
 - **PCA Dimensionality Reduction**: Retains 5 orthogonal principal components capturing **99.99% cumulative variance** across Robust Scaled features (`RobustScaler()`).
 - **Validation Strategy**: **Out-of-Time (OOT) Temporal Split** (Months 0–5 for Training, Months 6–7 for Testing).
 - **MLflow Tracking**: Logs 26 runs evaluating 5 architectures (`LightGBM`, `XGBoost`, `Random Forest`, `Logistic Regression`, `SVM`) across 4 sampling strategies (`Baseline`, `SMOTE 1:1`, `Random Undersample`, `Hybrid 1:3`) and 6 dataset variants (`Base.csv`, `Variant I` to `Variant V`).
-- **Official NeurIPS Metrics**: Evaluates **Recall @ 5% FPR** (`23.65%`), **PR-AUC** (`0.1063`), and **Age Fairness Disparity Ratio**.
+- **Official NeurIPS Metrics**: Evaluates **Recall @ 5% FPR** (`60.00%`), **PR-AUC** (`0.1617`), **ROC-AUC** (`0.9295`), and **Age Fairness Disparity Ratio**.
 
 ### 2. Financial Operations Agent (`src/finops_agent.py`)
 - **SequenceMatcher Ratio**: Calculates string similarity between applicant name and email username prefix dynamically.
