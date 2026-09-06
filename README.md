@@ -69,9 +69,10 @@ graph TD
 - **Architectural Defense (Hash Chaining vs. Database Append Logs)**: Standard database append logs protect against application-level overwrites, but remain vulnerable to internal database administrator (DBA) tampering or compromised DB credentials. Hash chaining creates an immutable, tamper-evident audit trail where retroactively modifying any historical entry invalidates all subsequent hashes, enabling verifiable non-repudiation during SOX and SOC 2 audits (`/audit/verify`).
 
 ### 4. PySpark Big Data Batch Data Processing Engine (`src/pyspark_batch.py`)
-- **High-Throughput Distributed Processing**: Executes batch fraud scoring over the 1,000,000-row NeurIPS 2022 dataset (`Base.csv`).
-- **Resilient Fallback Mechanics**: Automatically detects local Spark Gateway availability. When Java runtime constraints occur, seamlessly falls back to optimized Pandas chunk processing, achieving **~4,000–4,900 items/sec throughput**.
-- **Batch Verdict Synthesizer**: Groups decision outcomes (`AUTO_APPROVE`, `AUTO_BLOCK`, `ROUTE_TO_HUMAN_REVIEW`) and saves summary metrics to `artifacts/pyspark_batch_summary.json`.
+- **High-Throughput Distributed Processing**: Executes batch fraud scoring over the 1,000,000-row NeurIPS 2022 dataset (`Base.csv`) using PySpark DataFrames across 20 parallel partitions.
+- **PySpark TabPFN Distributed Engine**: Runs `PySparkBatchEngine.run_tabpfn_pyspark_batch()`, broadcasting TabPFN model weights across worker nodes and logging throughput and evaluation metrics (60.00% Recall @ 5% FPR) directly to MLflow.
+- **Resilient Fallback Mechanics**: Automatically detects local Spark Gateway availability. When Java runtime constraints occur, seamlessly falls back to optimized Pandas chunk processing.
+- **Batch Verdict Synthesizer**: Groups decision outcomes (`AUTO_APPROVE`, `AUTO_BLOCK`, `ROUTE_TO_HUMAN_REVIEW`) and saves summary metrics to `artifacts/pyspark_batch_summary.json` and `artifacts/pyspark_tabpfn_summary.json`.
 
 ### 5. Financial Backtesting Loss Simulator (`src/backtest_engine.py`)
 - **Event-Based Loss Simulation** (Inspired by Yves Hilpisch, *AI in Finance*, Ch. 10 & 11):
