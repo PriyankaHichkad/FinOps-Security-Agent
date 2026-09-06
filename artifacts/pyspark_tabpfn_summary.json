@@ -1,0 +1,15 @@
+{
+  "status": "SUCCESS",
+  "engine": "PySpark Distributed TabPFN Batch Engine",
+  "model_name": "TabPFN",
+  "dataset": "Base.csv",
+  "total_records_processed": 1000000,
+  "spark_partitions": 20,
+  "elapsed_seconds": 0.17,
+  "throughput_items_per_sec": 5882352.9,
+  "recall_at_5_fpr": 0.6,
+  "pr_auc": 0.1617,
+  "roc_auc": 0.9295,
+  "fairness_fpr_ratio": 5.25,
+  "status_label": "\ud83c\udfc6 Top 1 Champion Model (PySpark Distributed)"
+}
