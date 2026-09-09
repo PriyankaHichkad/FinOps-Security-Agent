@@ -21,6 +21,8 @@ langgraph>=0.2.0
 pyspark>=3.3.0
 optuna>=3.0.0
 catboost>=1.2.0
+tabpfn>=0.1.10
+python-dotenv>=1.0.0
 pytest>=7.3.0
 
 

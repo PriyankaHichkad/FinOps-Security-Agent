@@ -135,13 +135,18 @@ class PySparkBatchEngine:
         from src.ml_engine import MLEngine
         engine = MLEngine()
 
-        # Find TabPFN comparison entry from matrix
-        tabpfn_meta = next((m for m in engine.comparison_matrix if "TabPFN" in m.get("experiment_run", "")), {
-            "recall_at_5_fpr": 0.60,
-            "pr_auc": 0.1617,
-            "roc_auc": 0.9295,
-            "fairness_fpr_ratio": 5.25
-        })
+        # Find champion model comparison entry dynamically from matrix
+        champion_meta = next((m for m in engine.comparison_matrix if "Champion" in m.get("status", "") or "Top 1" in m.get("status", "")), None)
+        if not champion_meta and engine.comparison_matrix:
+            champion_meta = engine.comparison_matrix[0]
+        elif not champion_meta:
+            champion_meta = {
+                "recall_at_5_fpr": 0.0,
+                "pr_auc": 0.0,
+                "roc_auc": 0.0,
+                "fairness_fpr_ratio": 1.0,
+                "experiment_run": "Baseline"
+            }
 
         total_rows = 1000000
         num_partitions = 20
@@ -157,18 +162,18 @@ class PySparkBatchEngine:
 
         tabpfn_summary = {
             "status": "SUCCESS",
-            "engine": "PySpark Distributed TabPFN Batch Engine",
-            "model_name": "TabPFN",
+            "engine": "PySpark Distributed Batch Engine",
+            "model_name": champion_meta.get("model_name", "ChampionModel"),
             "dataset": os.path.basename(target_path) if target_path else "Base.csv",
             "total_records_processed": total_rows,
             "spark_partitions": num_partitions,
             "elapsed_seconds": elapsed,
             "throughput_items_per_sec": throughput,
-            "recall_at_5_fpr": float(tabpfn_meta.get("recall_at_5_fpr", 0.60)),
-            "pr_auc": float(tabpfn_meta.get("pr_auc", 0.1617)),
-            "roc_auc": float(tabpfn_meta.get("roc_auc", 0.9295)),
-            "fairness_fpr_ratio": float(tabpfn_meta.get("fairness_fpr_ratio", 5.25)),
-            "status_label": "🏆 Top 1 Champion Model (PySpark Distributed)"
+            "recall_at_5_fpr": float(champion_meta.get("recall_at_5_fpr", 0.0)),
+            "pr_auc": float(champion_meta.get("pr_auc", 0.0)),
+            "roc_auc": float(champion_meta.get("roc_auc", 0.0)),
+            "fairness_fpr_ratio": float(champion_meta.get("fairness_fpr_ratio", 1.0)),
+            "status_label": f"🏆 {champion_meta.get('experiment_run', 'Champion Model')} (PySpark Distributed)"
         }
 
         # Log into MLflow tracking database

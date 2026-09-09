@@ -1,6 +1,6 @@
 # FinOps-Security-Agent
 
-> **Multi-Agent Decisioning Microservice for Financial Operations, Security Compliance, and NeurIPS 2022 Fraud Risk Scoring.**
+> **Multi-Stage LangGraph Decision Workflow Microservice for Financial Operations, Security Compliance, and NeurIPS 2022 Fraud Risk Scoring.**
 
 [**User & REST API Guide**](docs/UserGuide.md) • [**Developer Architecture Guide**](docs/DeveloperGuide.md) • [**Tools & Tech Stack**](#tools--tech-stack)
 

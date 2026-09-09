@@ -557,12 +557,6 @@ class MLEngine:
                             fpr_yr = float(np.mean(pred_5[mask_yr] == 1)) if np.sum(mask_yr) > 0 else 0.05
                             fairness_disparity = round(fpr_sr / max(fpr_yr, 1e-6), 2)
 
-                        if model_name == "TabPFN" and strategy_key == "SMOTE_1to1":
-                            recall_at_5_fpr = 0.60
-                            pr_auc_val = 0.1617
-                            roc_auc_val = 0.9295
-                            fairness_disparity = 5.25
-
                         lift = round(pr_auc_val / 0.0110, 2)
 
                         all_candidate_evals.append({

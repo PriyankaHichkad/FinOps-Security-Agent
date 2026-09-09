@@ -17,6 +17,8 @@ from src.security_agent import SecurityAgent
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 AUDIT_LEDGER_PATH = os.path.join(BASE_DIR, "data", "audit_ledger.json")
+AUDIT_LEDGER_JSONL_PATH = os.path.join(BASE_DIR, "data", "audit_ledger.jsonl")
+AUDIT_LEDGER_JSON_PATH = os.path.join(BASE_DIR, "data", "audit_ledger.json")
 
 class AgentState(TypedDict):
     event: Dict[str, Any]
@@ -29,41 +31,61 @@ class AgentState(TypedDict):
 
 class LangGraphOrchestrator:
     """
-    LangGraph StateGraph Multi-Agent Orchestrator.
-    Executes sequential node transitions across ML, FinOps, and SecOps agents.
+    Multi-Stage LangGraph Decision Workflow Engine.
+    Executes a 4-step sequential LangGraph workflow:
+    [ml_scoring] -> [finops_evaluation] -> [secops_evaluation] -> [verdict_synthesis]
+    Appends every decision to an immutable SHA-256 Cryptographic Hash Chain via O(1) JSONL storage.
     """
     def __init__(self):
         self.ml_engine = MLEngine()
         self.finops_agent = FinOpsAgent()
         self.security_agent = SecurityAgent()
-        self.audit_chain: List[Dict[str, Any]] = []
+        self.audit_chain = []
         self.load_audit_ledger()
         self.app = self._build_graph()
 
     def load_audit_ledger(self):
-        """Loads SHA-256 audit ledger from disk."""
-        if os.path.exists(AUDIT_LEDGER_PATH):
+        """Loads SHA-256 audit ledger from O(1) JSONL disk store."""
+        self.audit_chain = []
+        target_path = AUDIT_LEDGER_JSONL_PATH if os.path.exists(AUDIT_LEDGER_JSONL_PATH) else AUDIT_LEDGER_JSON_PATH
+
+        if os.path.exists(target_path):
             try:
-                with open(AUDIT_LEDGER_PATH, "r") as f:
-                    self.audit_chain = json.load(f)
+                if target_path.endswith(".jsonl"):
+                    with open(target_path, "r") as f:
+                        for line in f:
+                            if line.strip():
+                                self.audit_chain.append(json.loads(line.strip()))
+                else:
+                    with open(target_path, "r") as f:
+                        self.audit_chain = json.load(f)
             except Exception as e:
                 logger.warning(f"Failed loading audit ledger: {e}")
                 self.audit_chain = []
-        else:
+
+        if not self.audit_chain:
             genesis_entry = {
                 "record_id": 0,
                 "event_id": "GENESIS",
                 "verdict": "GENESIS",
+                "risk_level": "LOW_RISK",
+                "prev_hash": "0" * 64,
                 "previous_hash": "0" * 64,
                 "current_hash": hashlib.sha256(b"GENESIS_BLOCK_FINOPS_SECURITY_AGENT").hexdigest()
             }
             self.audit_chain = [genesis_entry]
+            self.append_audit_entry(genesis_entry)
+
+    def append_audit_entry(self, entry: Dict[str, Any]):
+        """Fast O(1) append-only disk write for audit ledger."""
+        os.makedirs(os.path.dirname(AUDIT_LEDGER_JSONL_PATH), exist_ok=True)
+        with open(AUDIT_LEDGER_JSONL_PATH, "a") as f:
+            f.write(json.dumps(entry) + "\n")
 
     def save_audit_ledger(self):
-        """Saves SHA-256 audit chain to disk."""
-        os.makedirs(os.path.dirname(AUDIT_LEDGER_PATH), exist_ok=True)
-        with open(AUDIT_LEDGER_PATH, "w") as f:
-            json.dump(self.audit_chain, f, indent=2)
+        """Saves last audit entry to disk via O(1) append."""
+        if self.audit_chain:
+            self.append_audit_entry(self.audit_chain[-1])
 
     def _build_graph(self):
         """Constructs LangGraph StateGraph Workflow."""
