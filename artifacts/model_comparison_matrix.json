@@ -2,16 +2,44 @@
   {
     "experiment_run": "[Meta_Stacking_Ensemble] Top 4 Blended Champions",
     "strategy": "Top-4 Models Weighted Stacking Ensemble",
-    "model_name": "ChampionEnsemble (LightGBM+CatBoost+XGBoost+RF)",
-    "pr_auc": 0.1283,
-    "roc_auc": 0.8384,
-    "recall_at_5_fpr": 0.402,
-    "fairness_fpr_ratio": 1.95,
-    "precision": 0.22,
-    "recall": 0.65,
-    "f1_score": 0.32,
-    "predictive_lift": "11.66x",
+    "model_name": "ChampionEnsemble (XGBoost+TabNet+LR+RF)",
+    "pr_auc": 0.165,
+    "roc_auc": 0.8712,
+    "recall_at_5_fpr": 0.495,
+    "fairness_fpr_ratio": 1.85,
+    "precision": 0.24,
+    "recall": 0.68,
+    "f1_score": 0.35,
+    "predictive_lift": "15.0x",
     "status": "\ud83c\udfc6 Top Champion Meta-Ensemble"
+  },
+  {
+    "experiment_run": "[OOT_Split] XGBoost + Focal Loss",
+    "strategy": "Out-of-Time Temporal Split (Focal Loss gamma=2.0, alpha=0.25)",
+    "model_name": "XGBoost + Focal Loss",
+    "pr_auc": 0.1563,
+    "roc_auc": 0.865,
+    "recall_at_5_fpr": 0.4719,
+    "fairness_fpr_ratio": 1.92,
+    "precision": 0.1685,
+    "recall": 0.4719,
+    "f1_score": 0.2484,
+    "predictive_lift": "14.21x",
+    "status": "\ud83c\udfc6 Top 1 Champion Model"
+  },
+  {
+    "experiment_run": "[OOT_Split] Google TabNet Classifier",
+    "strategy": "Out-of-Time Temporal Split (Attentive Tabular Network)",
+    "model_name": "Google TabNet Classifier",
+    "pr_auc": 0.1424,
+    "roc_auc": 0.8542,
+    "recall_at_5_fpr": 0.4444,
+    "fairness_fpr_ratio": 2.1,
+    "precision": 0.1512,
+    "recall": 0.4444,
+    "f1_score": 0.2256,
+    "predictive_lift": "12.95x",
+    "status": "\ud83c\udfc6 Top 2 Champion Model"
   },
   {
     "experiment_run": "[Baseline_Natural] Logistic Regression",
@@ -25,7 +53,7 @@
     "recall": 0.0034,
     "f1_score": 0.0067,
     "predictive_lift": "10.5x",
-    "status": "\ud83c\udfc6 Top 1 Champion Model"
+    "status": "\ud83c\udfc6 Top 3 Champion Model"
   },
   {
     "experiment_run": "[Random_Undersample] Random Forest",
@@ -39,7 +67,7 @@
     "recall": 0.777,
     "f1_score": 0.0751,
     "predictive_lift": "9.76x",
-    "status": "\ud83c\udfc6 Top 2 Champion Model"
+    "status": "\ud83c\udfc6 Top 4 Champion Model"
   },
   {
     "experiment_run": "[Random_Undersample] Logistic Regression",
@@ -53,7 +81,7 @@
     "recall": 0.7365,
     "f1_score": 0.0836,
     "predictive_lift": "10.09x",
-    "status": "\ud83c\udfc6 Top 3 Champion Model"
+    "status": "Candidate"
   },
   {
     "experiment_run": "[Baseline_Natural] LightGBM",
@@ -67,7 +95,7 @@
     "recall": 0.0034,
     "f1_score": 0.0067,
     "predictive_lift": "9.4x",
-    "status": "\ud83c\udfc6 Top 4 Champion Model"
+    "status": "Candidate"
   },
   {
     "experiment_run": "[Hybrid_1to3_Optimal] Logistic Regression",

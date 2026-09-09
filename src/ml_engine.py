@@ -69,6 +69,23 @@ except ImportError:
     HAS_TABPFN = False
     TabPFNClassifier = None
 
+try:
+    from pytorch_tabnet.tab_model import TabNetClassifier
+    HAS_TABNET = True
+except ImportError:
+    HAS_TABNET = False
+    TabNetClassifier = None
+
+def focal_loss_obj(y_true, y_pred):
+    alpha = 0.25
+    gamma = 2.0
+    p = 1.0 / (1.0 + np.exp(-y_pred))
+    p_t = p * y_true + (1.0 - p) * (1.0 - y_true)
+    alpha_t = alpha * y_true + (1.0 - alpha) * (1.0 - y_true)
+    grad = alpha_t * (1.0 - p_t) ** gamma * (p - y_true)
+    hess = alpha_t * (1.0 - p_t) ** gamma * p * (1.0 - p)
+    return grad, hess
+
 from src.logger import logger, FinGuardException
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
