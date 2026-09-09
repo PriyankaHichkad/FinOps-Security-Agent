@@ -165,4 +165,4 @@ The vendor reference database is stored in `data/vendor_master.json`.
 A: The FinOps agent automatically strips currency symbols, commas, and whitespace, coercing inputs into clean numerical floats (`12500.0`).
 
 **Q: Where are audit logs persisted?**  
-A: Every decision block is cryptographically linked and saved permanently to `data/audit_ledger.json`.
+A: Every decision block is cryptographically linked with SHA-256 hash pointers and saved permanently to `data/audit_ledger.jsonl` using high-performance $O(1)$ append-only storage.
