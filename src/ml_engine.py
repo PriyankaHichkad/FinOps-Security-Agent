@@ -455,12 +455,14 @@ class MLEngine:
                 else:
                     X_train_res, y_train_res = X_train_scaled, y_train
 
-                model_families = ["TabPFN", "CatBoost", "LightGBM", "XGBoost", "Random Forest", "Logistic Regression"]
+                model_families = ["XGBoost + Focal Loss", "Google TabNet", "TabPFN", "CatBoost", "LightGBM", "XGBoost", "Random Forest", "Logistic Regression"]
                 
                 for model_name in model_families:
                     if model_name == "LightGBM" and not HAS_LGBM:
                         continue
-                    if model_name == "XGBoost" and not HAS_XGB:
+                    if (model_name in ["XGBoost", "XGBoost + Focal Loss"]) and not HAS_XGB:
+                        continue
+                    if model_name == "Google TabNet" and not HAS_TABNET:
                         continue
                     if model_name == "CatBoost" and not HAS_CATBOOST:
                         continue
@@ -471,7 +473,24 @@ class MLEngine:
                     best_params = self._tune_with_optuna(model_name, X_train_res, y_train_res, X_test_scaled, y_test, pos_weight)
 
                     # Build Model Instance with tuned or default params
-                    if model_name == "LightGBM" and HAS_LGBM:
+                    if model_name == "XGBoost + Focal Loss" and HAS_XGB:
+                        base_model = XGBClassifier(
+                            n_estimators=150,
+                            learning_rate=0.05,
+                            max_depth=6,
+                            objective=focal_loss_obj,
+                            scale_pos_weight=pos_weight,
+                            max_delta_step=1.0,
+                            random_state=42,
+                            eval_metric="logloss"
+                        )
+                    elif model_name == "Google TabNet" and HAS_TABNET:
+                        base_model = TabNetClassifier(
+                            n_d=16, n_a=16, n_steps=4, gamma=1.3,
+                            cat_idxs=[], cat_dims=[],
+                            verbose=0
+                        )
+                    elif model_name == "LightGBM" and HAS_LGBM:
                         lr = best_params.get("learning_rate", 0.05) if best_params else 0.05
                         n_est = best_params.get("n_estimators", 150) if best_params else 150
                         num_l = best_params.get("num_leaves", 31) if best_params else 31
@@ -521,7 +540,7 @@ class MLEngine:
                         base_model.fit(X_train_fit, y_train_fit)
 
                         # Step 5: Probability Calibration (Isotonic / Sigmoid scaling)
-                        if model_name != "TabPFN":
+                        if model_name not in ["TabPFN", "Google TabNet"]:
                             try:
                                 calibrated_model = CalibratedClassifierCV(estimator=base_model, method="sigmoid", cv="prefit")
                                 calibrated_model.fit(X_train_fit, y_train_fit)

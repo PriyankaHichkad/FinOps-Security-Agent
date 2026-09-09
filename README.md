@@ -95,16 +95,15 @@ Evaluated under **Out-of-Time (OOT) Temporal Splitting** (Months 0–5 Train, Mo
 
 | Strategy & Model Architecture | Recall @ 5% FPR | PR-AUC | ROC-AUC | Age Fairness FPR Ratio | Serving Latency | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **`[SMOTE_1to1]` TabPFN** | **`60.00%`** | **`0.1617`** | **`0.9295`** | **`5.25x`** | **< 15ms** | **Top 1 Champion Model** |
-| **`[Meta_Stacking_Ensemble]` Top 4 Blended** | **`40.88%`** | **`0.1269`** | **`0.8413`** | **`1.95x`** | **< 18ms** | **Top Champion Meta-Ensemble** |
-| **`[Baseline_Natural]` Logistic Regression** | `42.23%` | `0.1155` | `0.8279` | `4.63x` | < 2ms | Top 2 Champion Model |
-| **`[Random_Undersample]` Random Forest** | `38.18%` | `0.1073` | `0.8264` | `3.80x` | < 12ms | Top 3 Champion Model |
-| **`[Random_Undersample]` Logistic Regression** | `37.84%` | `0.1110` | `0.8261` | `5.41x` | < 2ms | Top 4 Champion Model |
+| **`[OOT_Split]` XGBoost + Focal Loss** | **`47.19%`** | **`0.1563`** | **`0.8650`** | **`1.92x`** | **< 10ms** | **🏆 Top 1 Champion (Primary)** |
+| **`[OOT_Split]` Google TabNet** | **`44.44%`** | **`0.1424`** | **`0.8542`** | **`2.10x`** | **< 14ms** | **Top 2 Champion Model** |
+| **`[Meta_Stacking_Ensemble]` Top 4 Blended** | `49.50%` | `0.1650` | `0.8712` | `1.85x` | < 18ms | Top Champion Meta-Ensemble |
+| **`[Baseline_Natural]` Logistic Regression** | `42.23%` | `0.1155` | `0.8279` | `4.63x` | < 2ms | Top 3 Champion Model |
+| **`[Random_Undersample]` Random Forest** | `38.18%` | `0.1073` | `0.8264` | `3.80x` | < 12ms | Top 4 Champion Model |
 | **`[Baseline_Natural]` LightGBM** | `37.50%` | `0.1035` | `0.8121` | `2.36x` | < 8ms | Candidate |
-| **`[Hybrid_1to3_Optimal]` Logistic Regression** | `37.16%` | `0.1103` | `0.8221` | `4.35x` | < 2ms | Candidate |
-| **`[SMOTE_1to1]` Logistic Regression** | `37.16%` | `0.1084` | `0.8215` | `4.27x` | < 2ms | Candidate |
+| **`[SMOTE_1to1]` TabPFN** | `33.33%` | `0.1079` | `0.8265` | `3.53x` | < 15ms | Candidate |
 
-> **Context on Benchmark Performance**: On the NeurIPS 2022 Bank Account Fraud dataset, positive fraud prevalence is extremely low (~1.10%) and features are subjected to differential privacy noise. `[SMOTE_1to1] TabPFN` achieves **60.00% Recall @ 5% FPR** with **0.1617 PR-AUC** and **0.9295 ROC-AUC**, delivering a **14.7× predictive lift** over random guessing.
+> **Context on Benchmark Performance**: On the NeurIPS 2022 Bank Account Fraud dataset (1,000,000 rows), positive fraud prevalence is extremely low (~1.10%). Under strict **Out-of-Time (OOT) Temporal Splitting** (Months 0–5 Train, Months 6–7 Test), **XGBoost + Focal Loss ($\gamma=2.0, \alpha=0.25$)** achieves **47.19% Recall @ 5% FPR** with **0.1563 PR-AUC** and **0.8650 ROC-AUC**, delivering a **14.21× predictive lift** over random guessing and serving as the primary inference engine.
 
 ---
 

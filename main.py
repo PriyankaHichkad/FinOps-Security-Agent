@@ -66,7 +66,7 @@ def get_system_metrics():
     pca_metrics = ml_engine.get_pca_metrics()
     audit_status = orchestrator.verify_audit_chain()
     return {
-        "model_champion": "LightGBM Classifier",
+        "model_champion": "XGBoost Classifier + Focal Loss",
         "pca_variance": pca_metrics,
         "audit_ledger_status": audit_status
     }
