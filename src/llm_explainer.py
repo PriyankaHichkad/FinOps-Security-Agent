@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 FinOps-Security-Agent — Predictive-Generative LLM Fraud Explainer Module (XAI)
-Bridges Predictive ML risk scores (TabPFN) and FinOps/SecOps policy evidence with Generative AI
+Bridges Predictive ML risk scores (XGBoost + Focal Loss) and FinOps/SecOps policy evidence with Generative AI
 to produce grounded, non-hallucinated natural language fraud decision explanations.
 """
 
@@ -22,7 +22,7 @@ from src.logger import logger
 class LLMFraudExplainer:
     """
     Predictive-Generative Hybrid XAI Engine.
-    Translates mathematical TabPFN fraud scores, SHAP risk drivers, and policy evidence
+    Translates mathematical XGBoost + Focal Loss fraud scores, SHAP risk drivers, and policy evidence
     into grounded natural language decision rationales.
     """
     def __init__(self):
@@ -131,7 +131,7 @@ class LLMFraudExplainer:
         """Generates a zero-cost, deterministic grounded natural language explanation."""
         drivers = []
         if fraud_prob > 0.50:
-            drivers.append(f"high ML fraud probability of {fraud_prob*100:.1f}% (TabPFN score)")
+            drivers.append(f"high ML fraud probability of {fraud_prob*100:.1f}% (XGBoost + Focal Loss score)")
         elif fraud_prob > 0.20:
             drivers.append(f"moderate ML fraud score of {fraud_prob*100:.1f}%")
         

@@ -33,7 +33,7 @@ graph TD
     A1["Single REST Event (POST /decide)"] --> B["LangGraph StateGraph Engine"]
     A2["PySpark Big Data Batch (POST /decide/batch)"] --> B
     
-    B --> C["1. ML Engine Node (PCA & TabPFN / Stacking Ensemble)"]
+    B --> C["1. ML Engine Node (PCA & XGBoost + Focal Loss)"]
     B --> D["2. FinOps Policy Node (PO Match & Limits)"]
     B --> E["3. SecOps Guard Node (UEBA & Prompt Scanner)"]
     
@@ -58,6 +58,7 @@ graph TD
 - **Explained Variance Ratio**:
   $$\text{EVR}_i = \frac{\lambda_i}{\sum_{j=1}^p \lambda_j}$$
 - **PCA Component Selection**: Retains 5 principal components capturing **99.99% cumulative variance** across Robust Scaled features (`RobustScaler`), optimizing serving latency to **< 8ms**.
+- **Primary Champion Model**: **XGBoost + Focal Loss ($\gamma=2.0, \alpha=0.25$)** achieving **47.19% Recall @ 5% FPR** and **0.1563 PR-AUC** under strict temporal Out-of-Time split (Months 0–5 Train, Months 6–7 Test).
 
 ### 2. FinOps Policy & SecOps Guard (`src/finops_agent.py`, `src/security_agent.py`)
 - **Deterministic Rules**: Evaluates spending caps (\$10,000 threshold), Purchase Order matching, and vendor denylist status.
@@ -72,9 +73,9 @@ graph TD
 
 ### 4. PySpark Big Data Batch Data Processing Engine (`src/pyspark_batch.py`)
 - **High-Throughput Distributed Processing**: Executes batch fraud scoring over the 1,000,000-row NeurIPS 2022 dataset (`Base.csv`) using PySpark DataFrames across 20 parallel partitions.
-- **PySpark TabPFN Distributed Engine**: Runs `PySparkBatchEngine.run_tabpfn_pyspark_batch()`, broadcasting TabPFN model weights across worker nodes and logging throughput and evaluation metrics (60.00% Recall @ 5% FPR) directly to MLflow.
+- **PySpark Distributed XGBoost Batch Engine**: Runs `PySparkBatchEngine.run_batch_pipeline()`, broadcasting model context across worker nodes and logging throughput and evaluation metrics (47.19% Recall @ 5% FPR) directly to MLflow.
 - **Resilient Fallback Mechanics**: Automatically detects local Spark Gateway availability. When Java runtime constraints occur, seamlessly falls back to optimized Pandas chunk processing.
-- **Batch Verdict Synthesizer**: Groups decision outcomes (`AUTO_APPROVE`, `AUTO_BLOCK`, `ROUTE_TO_HUMAN_REVIEW`) and saves summary metrics to `artifacts/pyspark_batch_summary.json` and `artifacts/pyspark_tabpfn_summary.json`.
+- **Batch Verdict Synthesizer**: Groups decision outcomes (`AUTO_APPROVE`, `AUTO_BLOCK`, `ROUTE_TO_HUMAN_REVIEW`) and saves summary metrics to `artifacts/pyspark_batch_summary.json`.
 
 ### 5. Financial Backtesting Loss Simulator (`src/backtest_engine.py`)
 - **Event-Based Loss Simulation** (Inspired by Yves Hilpisch, *AI in Finance*, Ch. 10 & 11):
@@ -82,7 +83,7 @@ graph TD
 - **Simulated Economic ROI**: Evaluates net dollar savings across 20,000+ Out-of-Time transactions, achieving **\$310,056.75 in Net Savings** (**41.90% ROI cost reduction**) at optimal threshold $\tau^* = 0.95$.
 
 ### 6. Predictive-Generative LLM Explainable AI Engine (`src/llm_explainer.py`)
-- **Hybrid Neuro-Symbolic XAI**: Bridges predictive ML fraud scores (TabPFN) and FinOps/SecOps policy evidence with Generative AI (LLMs) to synthesize grounded, non-hallucinated decision rationales.
+- **Hybrid Neuro-Symbolic XAI**: Bridges predictive ML fraud scores (XGBoost + Focal Loss) and FinOps/SecOps policy evidence with Generative AI (LLMs) to synthesize grounded, non-hallucinated decision rationales.
 - **Dual-Mode Execution**:
   - **With `GEMINI_API_KEY`**: Integrates with Google Gemini API (Free Tier) to generate human-readable SOX compliance summaries.
   - **Without API Key (Offline Zero-Cost Fallback)**: Automatically falls back to a deterministic natural language explanation template, running 100% free with zero setup.

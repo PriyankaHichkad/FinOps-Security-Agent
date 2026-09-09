@@ -53,7 +53,7 @@ graph TD
     A2["PySpark Batch Event (POST /decide/batch)"] --> B
     B --> C["LangGraph StateGraph Engine (src/langgraph_orchestrator.py)"]
     
-    C --> D["1. ML Engine Node (src/ml_engine.py - TabPFN 60% Recall)"]
+    C --> D["1. ML Engine Node (src/ml_engine.py - XGBoost + Focal Loss 47.19% OOT Recall)"]
     C --> E["2. FinOps Policy Node (src/finops_agent.py)"]
     C --> F["3. SecOps Guard Node (src/security_agent.py)"]
     
@@ -72,8 +72,8 @@ graph TD
 - **Explained Variance Ratio**: $EVR_i = \frac{\lambda_i}{\sum_{j=1}^p \lambda_j}$
 - **PCA Dimensionality Reduction**: Retains 5 orthogonal principal components capturing **99.99% cumulative variance** across Robust Scaled features (`RobustScaler()`).
 - **Validation Strategy**: **Out-of-Time (OOT) Temporal Split** (Months 0–5 for Training, Months 6–7 for Testing).
-- **MLflow Tracking**: Logs 26 runs evaluating 5 architectures (`LightGBM`, `XGBoost`, `Random Forest`, `Logistic Regression`, `SVM`) across 4 sampling strategies (`Baseline`, `SMOTE 1:1`, `Random Undersample`, `Hybrid 1:3`) and 6 dataset variants (`Base.csv`, `Variant I` to `Variant V`).
-- **Official NeurIPS Metrics**: Evaluates **Recall @ 5% FPR** (`60.00%`), **PR-AUC** (`0.1617`), **ROC-AUC** (`0.9295`), and **Age Fairness Disparity Ratio**.
+- **MLflow Tracking**: Logs runs evaluating multiple architectures (`XGBoost + Focal Loss`, `Google TabNet`, `LightGBM`, `CatBoost`, `Random Forest`, `Logistic Regression`) across 4 sampling strategies (`Baseline`, `SMOTE 1:1`, `Random Undersample`, `Hybrid 1:3`) and 6 dataset variants (`Base.csv`, `Variant I` to `Variant V`).
+- **Official NeurIPS Metrics**: Evaluates **Recall @ 5% FPR** (`47.19%`), **PR-AUC** (`0.1563`), **ROC-AUC** (`0.8650`), and **Age Fairness Disparity Ratio**.
 
 ### 2. Financial Operations Agent (`src/finops_agent.py`)
 - **SequenceMatcher Ratio**: Calculates string similarity between applicant name and email username prefix dynamically.
@@ -98,12 +98,12 @@ Synthesizes multi-agent signals into a 3-way final verdict:
 
 ### 6. PySpark Big Data Batch Data Processing Engine (`src/pyspark_batch.py`)
 - **Distributed DataFrame Abstraction**: Initializes local `SparkSession` for large-scale dataset batch scoring over 1,000,000 raw NeurIPS 2022 records.
-- **PySpark TabPFN Distributed Engine**: `PySparkBatchEngine.run_tabpfn_pyspark_batch()` partitions datasets into 20 parallel Spark worker partitions, broadcasting TabPFN model context (`sc.broadcast`) and logging throughput and evaluation metrics (60.00% Recall @ 5% FPR) directly into MLflow (`sqlite:///mlflow.db`).
+- **PySpark Distributed XGBoost Batch Engine**: `PySparkBatchEngine.run_batch_pipeline()` partitions datasets into 20 parallel Spark worker partitions, broadcasting model context (`sc.broadcast`) and logging throughput and evaluation metrics (47.19% Recall @ 5% FPR) directly into MLflow (`sqlite:///mlflow.db`).
 - **Graceful Fallback Mechanics**: Automatically catches `[JAVA_GATEWAY_EXITED]` or environment JVM errors on lightweight non-Java deployments, automatically falling back to an optimized Pandas batch engine.
 - **REST Integration**: Exposes batch processing via FastAPI `POST /decide/batch`.
 
 ### 7. Predictive-Generative LLM Explainable AI Engine (`src/llm_explainer.py`)
-- **Grounded Natural Language Translation**: Takes structured decision outputs from the LangGraph StateGraph engine, formatting TabPFN fraud scores, SHAP risk drivers, and policy flags into grounded human-readable summaries.
+- **Grounded Natural Language Translation**: Takes structured decision outputs from the LangGraph StateGraph engine, formatting XGBoost + Focal Loss fraud scores, SHAP risk drivers, and policy flags into grounded human-readable summaries.
 - **Dual-Mode Execution Engine**: Uses `google-genai` / Google Gemini API (Free Tier) when `GEMINI_API_KEY` is present; seamlessly falls back to a zero-cost, deterministic rule template engine when offline.
 
 ---
