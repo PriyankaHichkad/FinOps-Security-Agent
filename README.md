@@ -79,6 +79,12 @@ graph TD
   $$\text{Net Saved}(\tau) = \Big( \text{TP}(\tau) \times \$2,500 \Big) - \Big( \text{FP}(\tau) \times \$25 \Big) - \Big( N_{\text{test}} \times \$0.05 \Big)$$
 - **Simulated Economic ROI**: Evaluates net dollar savings across 20,000+ Out-of-Time transactions, achieving **\$310,056.75 in Net Savings** (**41.90% ROI cost reduction**) at optimal threshold $\tau^* = 0.95$.
 
+### 6. Predictive-Generative LLM Explainable AI Engine (`src/llm_explainer.py`)
+- **Hybrid Neuro-Symbolic XAI**: Bridges predictive ML fraud scores (TabPFN) and FinOps/SecOps policy evidence with Generative AI (LLMs) to synthesize grounded, non-hallucinated decision rationales.
+- **Dual-Mode Execution**:
+  - **With `GEMINI_API_KEY`**: Integrates with Google Gemini API (Free Tier) to generate human-readable SOX compliance summaries.
+  - **Without API Key (Offline Zero-Cost Fallback)**: Automatically falls back to a deterministic natural language explanation template, running 100% free with zero setup.
+
 ---
 
 ## Model Performance Matrix (NeurIPS 2022 Out-of-Time Benchmark)

@@ -76,6 +76,8 @@ Processes an incoming transaction, application, or invoice event through the mul
   "final_verdict": "AUTO_APPROVE",
   "risk_level": "LOW_RISK",
   "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "llm_explanation": "Event EVT-2026-001 was AUTO_APPROVED under LOW_RISK classification. ML model estimated a low fraud probability of 4.2%, with valid vendor credentials, PO match, and clean security scan.",
+  "explainability_mode": "Grounded XAI Engine",
   "layer_breakdown": {
     "ml_engine": {
       "fraud_probability": 0.0421,

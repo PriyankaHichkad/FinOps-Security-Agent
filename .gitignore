@@ -22,3 +22,5 @@ mlflow.db
 .vscode/
 .idea/
 catboost_info/
+.env
+

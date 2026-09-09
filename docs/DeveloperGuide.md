@@ -101,6 +101,10 @@ Synthesizes multi-agent signals into a 3-way final verdict:
 - **Graceful Fallback Mechanics**: Automatically catches `[JAVA_GATEWAY_EXITED]` or environment JVM errors on lightweight non-Java deployments, automatically falling back to an optimized Pandas batch engine.
 - **REST Integration**: Exposes batch processing via FastAPI `POST /decide/batch`.
 
+### 7. Predictive-Generative LLM Explainable AI Engine (`src/llm_explainer.py`)
+- **Grounded Natural Language Translation**: Takes structured decision outputs from the LangGraph StateGraph engine, formatting TabPFN fraud scores, SHAP risk drivers, and policy flags into grounded human-readable summaries.
+- **Dual-Mode Execution Engine**: Uses `google-genai` / Google Gemini API (Free Tier) when `GEMINI_API_KEY` is present; seamlessly falls back to a zero-cost, deterministic rule template engine when offline.
+
 ---
 
 ## 🔄 Sequence Diagrams

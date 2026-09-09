@@ -154,7 +154,7 @@ class LangGraphOrchestrator:
 
         final_state = self.app.invoke(initial_state)
 
-        return {
+        result = {
             "event_id": input_dict.get("event_id", "EVT-UNKNOWN"),
             "final_verdict": final_state["final_verdict"],
             "risk_level": final_state["risk_level"],
@@ -165,6 +165,17 @@ class LangGraphOrchestrator:
                 "security_agent": final_state["security_evidence"]
             }
         }
+
+        # Generate Predictive-Generative XAI Explanation
+        try:
+            from src.llm_explainer import llm_explainer
+            xai_res = llm_explainer.generate_explanation(result)
+            result["llm_explanation"] = xai_res.get("llm_explanation", "")
+            result["explainability_mode"] = xai_res.get("explainability_mode", "Grounded XAI Engine")
+        except Exception as e:
+            logger.warning(f"Could not attach LLM explanation: {e}")
+
+        return result
 
     def verify_audit_chain(self) -> Dict[str, Any]:
         """Validates SHA-256 cryptographic audit chain integrity."""
