@@ -53,13 +53,14 @@ graph TD
     A2["PySpark Batch Event (POST /decide/batch)"] --> B
     B --> C["LangGraph StateGraph Engine (src/langgraph_orchestrator.py)"]
     
-    C --> D["1. ML Engine Node (src/ml_engine.py)"]
+    C --> D["1. ML Engine Node (src/ml_engine.py - TabPFN 60% Recall)"]
     C --> E["2. FinOps Policy Node (src/finops_agent.py)"]
     C --> F["3. SecOps Guard Node (src/security_agent.py)"]
     
     D & E & F --> G["Synthesize 3-Way Verdict (AUTO_APPROVE / BLOCK / HUMAN)"]
-    G --> H["Cryptographic SHA-256 Hash Chain Ledger (data/audit_ledger.json)"]
-    H --> I["JSON Decision Response + SHA-256 Hash Pointer"]
+    G --> H["Predictive-Generative LLM XAI Engine (src/llm_explainer.py)"]
+    H --> I["Cryptographic SHA-256 Hash Chain Ledger (data/audit_ledger.json)"]
+    I --> J["JSON Decision Response + SHA-256 Hash Pointer + LLM Rationale"]
 ```
 
 ---

@@ -33,7 +33,7 @@ graph TD
     A1["Single REST Event (POST /decide)"] --> B["LangGraph StateGraph Engine"]
     A2["PySpark Big Data Batch (POST /decide/batch)"] --> B
     
-    B --> C["1. ML Engine Node (PCA & LightGBM)"]
+    B --> C["1. ML Engine Node (PCA & TabPFN / Stacking Ensemble)"]
     B --> D["2. FinOps Policy Node (PO Match & Limits)"]
     B --> E["3. SecOps Guard Node (UEBA & Prompt Scanner)"]
     
@@ -43,8 +43,9 @@ graph TD
     F -->|Hard Violation / Injection| H["AUTO_BLOCK"]
     F -->|High Dollar / Limit Exceeded| I["ROUTE_TO_HUMAN_REVIEW"]
     
-    G & H & I --> J["SHA-256 Cryptographic Audit Ledger"]
-    J --> K["FastAPI Service (/decide, /decide/batch, /audit/verify)"]
+    G & H & I --> J["Predictive-Generative LLM XAI Engine (Google Gemini Free Tier / Rule Template)"]
+    J --> K["SHA-256 Cryptographic Audit Ledger"]
+    K --> L["FastAPI Service (/decide, /decide/batch, /audit/verify)"]
 ```
 
 ---
