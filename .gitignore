@@ -23,4 +23,5 @@ mlflow.db
 .idea/
 catboost_info/
 .env
+scratch/
 
