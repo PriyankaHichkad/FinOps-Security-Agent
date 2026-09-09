@@ -2,13 +2,13 @@
   "status": "SUCCESS",
   "engine": "Pandas Batch Fallback Engine",
   "dataset": "Base.csv",
-  "total_records_processed": 1000000,
-  "elapsed_seconds": 1128.63,
-  "throughput_items_per_sec": 886.0,
-  "average_fraud_probability": 0.2671,
+  "total_records_processed": 500,
+  "elapsed_seconds": 18.62,
+  "throughput_items_per_sec": 26.9,
+  "average_fraud_probability": 0.1797,
   "verdict_distribution": {
     "AUTO_APPROVE": 0,
     "AUTO_BLOCK": 0,
-    "ROUTE_TO_HUMAN_REVIEW": 5000
+    "ROUTE_TO_HUMAN_REVIEW": 50
   }
 }

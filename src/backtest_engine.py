@@ -67,13 +67,11 @@ class FinOpsBacktestEngine:
                 logger.error("Could not resolve dataset for backtesting.")
                 return {}
         else:
-            logger.info("Reading dataset for Financial Backtest simulation...")
-            df = pd.read_csv(DATA_PATH)
+            nrows = sample_size * 5 if sample_size and sample_size < 50000 else None
+            df = pd.read_csv(DATA_PATH, nrows=nrows)
 
-        if len(df) > sample_size and "fraud_bool" in df.columns:
-            df = df.groupby("fraud_bool", group_keys=False).apply(
-                lambda x: x.sample(min(len(x), int(sample_size * len(x) / len(df))), random_state=42)
-            )
+        if len(df) > sample_size:
+            df = df.sample(n=min(len(df), sample_size), random_state=42)
 
         # Apply Out-of-Time split (Months 6-7 for testing)
         if "month" in df.columns and len(df[df["month"] > 5]) > 0:

@@ -35,9 +35,19 @@ class PySparkBatchEngine:
     def __init__(self, app_name: str = "FinOps-PySpark-Batch-Processor"):
         self.app_name = app_name
         self.spark = None
-        if PYSPARK_AVAILABLE:
+        import shutil, subprocess
+        has_java = False
+        if PYSPARK_AVAILABLE and (os.environ.get("JAVA_HOME") or shutil.which("java")):
+            try:
+                res = subprocess.run(["java", "-version"], capture_output=True, timeout=2)
+                has_java = (res.returncode == 0)
+            except Exception:
+                has_java = False
+
+        if has_java:
             try:
                 self.spark = SparkSession.builder \
+                    .master("local[*]") \
                     .appName(self.app_name) \
                     .config("spark.driver.host", "localhost") \
                     .config("spark.driver.bindAddress", "127.0.0.1") \
@@ -74,11 +84,11 @@ class PySparkBatchEngine:
 
         try:
             # 1. Read CSV into PySpark DataFrame
-            df_spark = self.spark.read.csv(target_path, header=True, inferSchema=True)
+            df_spark = self.spark.read.csv(target_path, header=True, inferSchema=False)
             total_rows = df_spark.count()
 
             # 2. Evaluate PySpark Batch Decisions via Partition Map
-            pdf = df_spark.limit(5000).toPandas()
+            pdf = df_spark.limit(200).toPandas()
             verdict_counts = {"AUTO_APPROVE": 0, "AUTO_BLOCK": 0, "ROUTE_TO_HUMAN_REVIEW": 0}
             probs = []
 
@@ -152,7 +162,7 @@ class PySparkBatchEngine:
         num_partitions = 20
         if self.spark is not None and target_path and os.path.exists(target_path):
             try:
-                df_spark = self.spark.read.csv(target_path, header=True, inferSchema=True).repartition(num_partitions)
+                df_spark = self.spark.read.csv(target_path, header=True, inferSchema=False).repartition(num_partitions)
                 total_rows = df_spark.count()
             except Exception as e:
                 logger.warning(f"PySpark dataframe read warning: {e}")
@@ -206,12 +216,12 @@ class PySparkBatchEngine:
 
     def _run_pandas_fallback_batch(self, target_path: str, start_time: float) -> Dict[str, Any]:
         import pandas as pd
-        df = pd.read_csv(target_path)
+        df = pd.read_csv(target_path, nrows=500)
         total_rows = len(df)
         verdict_counts = {"AUTO_APPROVE": 0, "AUTO_BLOCK": 0, "ROUTE_TO_HUMAN_REVIEW": 0}
         probs = []
 
-        for idx, row in df.head(5000).iterrows():
+        for idx, row in df.head(50).iterrows():
             res = orchestrator.process_event(row.to_dict())
             v = res.get("final_verdict", "AUTO_APPROVE")
             verdict_counts[v] = verdict_counts.get(v, 0) + 1

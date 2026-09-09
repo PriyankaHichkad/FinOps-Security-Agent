@@ -3,29 +3,15 @@
     "experiment_run": "[Meta_Stacking_Ensemble] Top 4 Blended Champions",
     "strategy": "Top-4 Models Weighted Stacking Ensemble",
     "model_name": "ChampionEnsemble (LightGBM+CatBoost+XGBoost+RF)",
-    "pr_auc": 0.1269,
-    "roc_auc": 0.8413,
-    "recall_at_5_fpr": 0.4088,
+    "pr_auc": 0.1283,
+    "roc_auc": 0.8384,
+    "recall_at_5_fpr": 0.402,
     "fairness_fpr_ratio": 1.95,
     "precision": 0.22,
     "recall": 0.65,
     "f1_score": 0.32,
-    "predictive_lift": "11.54x",
+    "predictive_lift": "11.66x",
     "status": "\ud83c\udfc6 Top Champion Meta-Ensemble"
-  },
-  {
-    "experiment_run": "[SMOTE_1to1] TabPFN",
-    "strategy": "SMOTE Oversampling (50/50 Equalized)",
-    "model_name": "TabPFN",
-    "pr_auc": 0.1617,
-    "roc_auc": 0.9295,
-    "recall_at_5_fpr": 0.6,
-    "fairness_fpr_ratio": 5.25,
-    "precision": 0.1562,
-    "recall": 0.3333,
-    "f1_score": 0.2128,
-    "predictive_lift": "14.7x",
-    "status": "\ud83c\udfc6 Top 1 Champion Model"
   },
   {
     "experiment_run": "[Baseline_Natural] Logistic Regression",
@@ -39,7 +25,7 @@
     "recall": 0.0034,
     "f1_score": 0.0067,
     "predictive_lift": "10.5x",
-    "status": "\ud83c\udfc6 Top 2 Champion Model"
+    "status": "\ud83c\udfc6 Top 1 Champion Model"
   },
   {
     "experiment_run": "[Random_Undersample] Random Forest",
@@ -53,7 +39,7 @@
     "recall": 0.777,
     "f1_score": 0.0751,
     "predictive_lift": "9.76x",
-    "status": "\ud83c\udfc6 Top 3 Champion Model"
+    "status": "\ud83c\udfc6 Top 2 Champion Model"
   },
   {
     "experiment_run": "[Random_Undersample] Logistic Regression",
@@ -67,7 +53,7 @@
     "recall": 0.7365,
     "f1_score": 0.0836,
     "predictive_lift": "10.09x",
-    "status": "\ud83c\udfc6 Top 4 Champion Model"
+    "status": "\ud83c\udfc6 Top 3 Champion Model"
   },
   {
     "experiment_run": "[Baseline_Natural] LightGBM",
@@ -81,7 +67,7 @@
     "recall": 0.0034,
     "f1_score": 0.0067,
     "predictive_lift": "9.4x",
-    "status": "Candidate"
+    "status": "\ud83c\udfc6 Top 4 Champion Model"
   },
   {
     "experiment_run": "[Hybrid_1to3_Optimal] Logistic Regression",
@@ -207,6 +193,20 @@
     "recall": 0.6,
     "f1_score": 0.0723,
     "predictive_lift": "10.53x",
+    "status": "Candidate"
+  },
+  {
+    "experiment_run": "[SMOTE_1to1] TabPFN",
+    "strategy": "SMOTE Oversampling (50/50 Equalized)",
+    "model_name": "TabPFN",
+    "pr_auc": 0.1079,
+    "roc_auc": 0.8265,
+    "recall_at_5_fpr": 0.3333,
+    "fairness_fpr_ratio": 3.53,
+    "precision": 0.1562,
+    "recall": 0.3333,
+    "f1_score": 0.2128,
+    "predictive_lift": "9.81x",
     "status": "Candidate"
   },
   {
