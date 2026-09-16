@@ -254,26 +254,34 @@ class MLEngine:
                     lr = trial.suggest_float("learning_rate", 0.01, 0.2, log=True)
                     n_est = trial.suggest_int("n_estimators", 50, 200, step=50)
                     num_leaves = trial.suggest_int("num_leaves", 15, 63)
-                    max_d = trial.suggest_int("max_depth", 3, 10)
+                    max_d = trial.suggest_int("max_depth", 3, 5)
+                    colsample = trial.suggest_float("colsample_bytree", 0.6, 0.8)
+                    subsample = trial.suggest_float("subsample", 0.6, 0.8)
                     spw = trial.suggest_float("scale_pos_weight", 1.0, float(pos_weight))
                     model = LGBMClassifier(
                         learning_rate=lr,
                         n_estimators=n_est,
                         num_leaves=num_leaves,
                         max_depth=max_d,
+                        colsample_bytree=colsample,
+                        subsample=subsample,
                         scale_pos_weight=spw,
                         random_state=42,
                         verbosity=-1
                     )
                 elif model_name == "XGBoost" and HAS_XGB:
                     lr = trial.suggest_float("learning_rate", 0.01, 0.2, log=True)
-                    max_d = trial.suggest_int("max_depth", 3, 8)
+                    max_d = trial.suggest_int("max_depth", 3, 5)
                     n_est = trial.suggest_int("n_estimators", 50, 150, step=50)
+                    colsample = trial.suggest_float("colsample_bytree", 0.6, 0.8)
+                    subsample = trial.suggest_float("subsample", 0.6, 0.8)
                     spw = trial.suggest_float("scale_pos_weight", 1.0, float(pos_weight))
                     model = XGBClassifier(
                         learning_rate=lr,
                         max_depth=max_d,
                         n_estimators=n_est,
+                        colsample_bytree=colsample,
+                        subsample=subsample,
                         scale_pos_weight=spw,
                         random_state=42,
                         eval_metric="logloss"
@@ -432,9 +440,10 @@ class MLEngine:
                 except Exception as e_exp:
                     logger.warning(f"MLflow experiment init warning: {e_exp}")
 
-            # Define 4 Sampling Experiment Strategies
+            # Define 5 Sampling Experiment Strategies
             sampling_strategies = [
                 ("Baseline_Natural", "No Resampling (1.1% Imbalance)", None),
+                ("Strategic_Focal_10pct", "Strategic Undersampling (10% Majority Ratio)", RandomUnderSampler(sampling_strategy=0.10, random_state=42) if HAS_SMOTE and RandomUnderSampler else None),
                 ("SMOTE_1to1", "SMOTE Oversampling (50/50 Equalized)", SMOTE(sampling_strategy=1.0, random_state=42) if HAS_SMOTE and SMOTE else None),
                 ("Random_Undersample", "Random Undersampling (1:1 Equalized)", RandomUnderSampler(sampling_strategy=1.0, random_state=42) if HAS_SMOTE and RandomUnderSampler else None),
                 ("Hybrid_1to3_Optimal", "Hybrid Sampling (1:3 Target Ratio - 25% Fraud)", SMOTE(sampling_strategy=0.333, random_state=42) if HAS_SMOTE and SMOTE else None)
@@ -474,10 +483,15 @@ class MLEngine:
 
                     # Build Model Instance with tuned or default params
                     if model_name == "XGBoost + Focal Loss" and HAS_XGB:
+                        max_d = best_params.get("max_depth", 4) if best_params else 4
+                        colsample = best_params.get("colsample_bytree", 0.7) if best_params else 0.7
+                        subsample = best_params.get("subsample", 0.7) if best_params else 0.7
                         base_model = XGBClassifier(
                             n_estimators=150,
                             learning_rate=0.05,
-                            max_depth=6,
+                            max_depth=max_d,
+                            colsample_bytree=colsample,
+                            subsample=subsample,
                             objective=focal_loss_obj,
                             scale_pos_weight=pos_weight,
                             max_delta_step=1.0,
@@ -494,15 +508,19 @@ class MLEngine:
                         lr = best_params.get("learning_rate", 0.05) if best_params else 0.05
                         n_est = best_params.get("n_estimators", 150) if best_params else 150
                         num_l = best_params.get("num_leaves", 31) if best_params else 31
-                        max_d = best_params.get("max_depth", 6) if best_params else 6
+                        max_d = best_params.get("max_depth", 4) if best_params else 4
+                        colsample = best_params.get("colsample_bytree", 0.7) if best_params else 0.7
+                        subsample = best_params.get("subsample", 0.7) if best_params else 0.7
                         spw = best_params.get("scale_pos_weight", pos_weight) if best_params else pos_weight
-                        base_model = LGBMClassifier(learning_rate=lr, n_estimators=n_est, num_leaves=num_l, max_depth=max_d, scale_pos_weight=spw, random_state=42, verbosity=-1)
+                        base_model = LGBMClassifier(learning_rate=lr, n_estimators=n_est, num_leaves=num_l, max_depth=max_d, colsample_bytree=colsample, subsample=subsample, scale_pos_weight=spw, random_state=42, verbosity=-1)
                     elif model_name == "XGBoost" and HAS_XGB:
                         lr = best_params.get("learning_rate", 0.05) if best_params else 0.05
-                        max_d = best_params.get("max_depth", 6) if best_params else 6
+                        max_d = best_params.get("max_depth", 4) if best_params else 4
                         n_est = best_params.get("n_estimators", 150) if best_params else 150
+                        colsample = best_params.get("colsample_bytree", 0.7) if best_params else 0.7
+                        subsample = best_params.get("subsample", 0.7) if best_params else 0.7
                         spw = best_params.get("scale_pos_weight", pos_weight) if best_params else pos_weight
-                        base_model = XGBClassifier(learning_rate=lr, max_depth=max_d, n_estimators=n_est, scale_pos_weight=spw, random_state=42, eval_metric="logloss")
+                        base_model = XGBClassifier(learning_rate=lr, max_depth=max_d, n_estimators=n_est, colsample_bytree=colsample, subsample=subsample, scale_pos_weight=spw, random_state=42, eval_metric="logloss")
                     elif model_name == "CatBoost" and HAS_CATBOOST:
                         depth = best_params.get("depth", 6) if best_params else 6
                         lr = best_params.get("learning_rate", 0.05) if best_params else 0.05
