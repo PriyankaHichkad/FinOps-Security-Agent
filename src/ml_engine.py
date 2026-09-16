@@ -77,8 +77,8 @@ except ImportError:
     TabNetClassifier = None
 
 def focal_loss_obj(y_true, y_pred):
-    alpha = 0.25
-    gamma = 2.0
+    alpha = 0.75  # Optimized alpha to heavily penalize uncaught fraud
+    gamma = 1.5   # Optimized gamma to prevent majority gradient swamping
     p = 1.0 / (1.0 + np.exp(-y_pred))
     p_t = p * y_true + (1.0 - p) * (1.0 - y_true)
     alpha_t = alpha * y_true + (1.0 - alpha) * (1.0 - y_true)
