@@ -80,7 +80,8 @@ graph TD
 ### 5. Financial Backtesting Loss Simulator (`src/backtest_engine.py`)
 - **Event-Based Loss Simulation** (Inspired by Yves Hilpisch, *AI in Finance*, Ch. 10 & 11):
   $$\text{Net Saved}(\tau) = \Big( \text{TP}(\tau) \times \$2,500 \Big) - \Big( \text{FP}(\tau) \times \$25 \Big) - \Big( N_{\text{test}} \times \$0.05 \Big)$$
-- **Simulated Economic ROI**: Evaluates net dollar savings across 20,000+ Out-of-Time transactions, achieving **\$310,056.75 in Net Savings** (**41.90% ROI cost reduction**) at optimal threshold $\tau^* = 0.95$.
+- **Simulated Economic ROI**: Evaluates net dollar savings across 20,487 Out-of-Time transactions (`artifacts/backtest_results_full.json`), achieving **\$457,200.65 in Net Savings** (**61.78% ROI cost reduction**) at optimal decision threshold $\tau^* = 0.15$.
+- **Artifact Lineage & Probability Calibration**: Evaluates decision thresholds on sigmoidal-calibrated probability scores (`CalibratedClassifierCV`). Full benchmark metrics are serialized in `artifacts/backtest_results_full.json` (`"dataset_scope": "full_oot_20k"`), while `artifacts/backtest_results_sample.json` (`"dataset_scope": "sample_200_smoke_test"`) serves as a lightweight local CI smoke test.
 
 ### 6. Predictive-Generative LLM Explainable AI Engine (`src/llm_explainer.py`)
 - **Hybrid Neuro-Symbolic XAI**: Bridges predictive ML fraud scores (XGBoost + Focal Loss) and FinOps/SecOps policy evidence with Generative AI (LLMs) to synthesize grounded, non-hallucinated decision rationales.

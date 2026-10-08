@@ -136,6 +136,7 @@ class FinOpsBacktestEngine:
                 optimal_metrics = res_entry
 
         summary = {
+            "dataset_scope": "full_oot_20k" if len(y_test) > 1000 else "sample_200_smoke_test",
             "total_test_transactions": len(y_test),
             "total_fraud_incidents": int(total_fraud_incidents),
             "unmitigated_baseline_exposure_usd": round(float(unmitigated_baseline_loss), 2),
@@ -148,6 +149,11 @@ class FinOpsBacktestEngine:
 
         os.makedirs(os.path.dirname(BACKTEST_RESULTS_PATH), exist_ok=True)
         with open(BACKTEST_RESULTS_PATH, "w") as f:
+            json.dump(summary, f, indent=2)
+
+        out_name = "backtest_results_full.json" if len(y_test) > 1000 else "backtest_results_sample.json"
+        target_scoped_path = os.path.join(BASE_DIR, "artifacts", out_name)
+        with open(target_scoped_path, "w") as f:
             json.dump(summary, f, indent=2)
 
         # Log Backtesting Results to MLflow
