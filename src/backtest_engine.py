@@ -271,11 +271,32 @@ def main():
     results = engine.run_backtest()
 
     if results:
+        m_5 = results.get("metrics_at_5_percent_fpr", {})
+        m_95 = results.get("metrics_at_threshold_0_95", {})
+
         print(f"\nTotal Test Transactions Analyzed : {results['total_test_transactions']:,}")
         print(f"Total Uncaught Baseline Exposure : ${results['unmitigated_baseline_exposure_usd']:,.2f}")
         print(f"Optimal Economic Threshold (τ*)   : {results['optimal_economic_threshold']}")
         print(f"Optimal Net Dollars Saved ($)    : ${results['optimal_net_dollars_saved_usd']:,.2f}")
         print(f"Return on Investment (ROI %)     : {results['optimal_roi_percentage']:.2f}%")
+        
+        print("\n" + "=" * 70)
+        print("🎯 PRIMARY OPERATING BENCHMARK (Recall @ 5% FPR — τ ≈ 0.43 / 0.45):")
+        print(f"  • Operating Threshold (τ)    : {m_5.get('threshold')}")
+        print(f"  • Fraud Caught (TP)          : {m_5.get('true_positives_caught')} / {results['total_fraud_incidents']}")
+        print(f"  • False Alarms (FP)          : {m_5.get('false_positives_flagged')} ({m_5.get('fpr_percentage')}%)")
+        print(f"  • Recall Percentage          : {m_5.get('recall_percentage')}%")
+        print(f"  • Net Dollars Saved ($)      : ${m_5.get('net_dollars_saved_usd'):,.2f}")
+        print(f"  • Economic ROI (%)           : {m_5.get('roi_percentage')}%")
+
+        print("\n" + "-" * 70)
+        print("📌 COMPARISON OPERATING POINT (Threshold τ = 0.95):")
+        print(f"  • Threshold (τ)              : 0.95")
+        print(f"  • Fraud Caught (TP)          : {m_95.get('true_positives_caught')} / {results['total_fraud_incidents']}")
+        print(f"  • False Alarms (FP)          : {m_95.get('false_positives_flagged')} ({m_95.get('fpr_percentage')}%)")
+        print(f"  • Recall Percentage          : {m_95.get('recall_percentage')}%")
+        print(f"  • Net Dollars Saved ($)      : ${m_95.get('net_dollars_saved_usd'):,.2f}")
+
         print("\nThreshold Grid Financial Backtest Summary:")
         print("-" * 70)
         for r in results['threshold_grid_simulation'][::3]:
