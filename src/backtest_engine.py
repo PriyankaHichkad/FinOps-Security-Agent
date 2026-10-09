@@ -128,8 +128,6 @@ class FinOpsBacktestEngine:
             optimal_tau = 0.50
             best_entry = {}
             tau_095_entry = {}
-            fpr_5_entry = {}
-            best_fpr_diff = float("inf")
 
             total_non_fraud = int(np.sum(y_test == 0))
 
@@ -171,10 +169,41 @@ class FinOpsBacktestEngine:
                 if tau_val == 0.95:
                     tau_095_entry = entry
 
-                fpr_diff = abs((fpr / 100.0) - 0.05)
-                if fpr_diff < best_fpr_diff:
-                    best_fpr_diff = fpr_diff
-                    fpr_5_entry = entry
+            # Interpolate exact 5% FPR operating point via roc_curve (FPR <= 0.05 cap)
+            from sklearn.metrics import roc_curve
+            fpr_arr, tpr_arr, thresh_arr = roc_curve(y_test, y_proba)
+            valid_idx = np.where(fpr_arr <= 0.05)[0]
+            if len(valid_idx) > 0:
+                idx_5pct = valid_idx[-1]
+                tau_5pct = float(thresh_arr[idx_5pct])
+            else:
+                tau_5pct = 0.50
+
+            tau_5pct_val = round(float(tau_5pct), 4)
+            y_pred_5pct = (y_proba >= tau_5pct).astype(int)
+            tn_5, fp_5, fn_5, tp_5 = confusion_matrix(y_test, y_pred_5pct).ravel()
+            gross_5 = tp_5 * self.avg_fraud_loss
+            fp_cost_5 = fp_5 * self.false_positive_cost
+            exec_cost_5 = len(y_test) * self.decision_cost
+            net_saved_5 = gross_5 - fp_cost_5 - exec_cost_5
+            roi_5 = (net_saved_5 / max(unmitigated_baseline_loss, 1.0)) * 100
+            recall_5 = (tp_5 / max(1, total_fraud_incidents)) * 100
+            fpr_5 = (fp_5 / max(1, total_non_fraud)) * 100
+
+            fpr_5_entry = {
+                "threshold": tau_5pct_val,
+                "true_positives_caught": int(tp_5),
+                "false_positives_flagged": int(fp_5),
+                "uncaught_fraud_fn": int(fn_5),
+                "true_negatives": int(tn_5),
+                "recall_percentage": round(float(recall_5), 2),
+                "fpr_percentage": round(float(fpr_5), 2),
+                "gross_fraud_prevented_usd": round(float(gross_5), 2),
+                "false_alarm_investigation_cost_usd": round(float(fp_cost_5), 2),
+                "execution_cost_usd": round(float(exec_cost_5), 2),
+                "net_dollars_saved_usd": round(float(net_saved_5), 2),
+                "roi_percentage": round(float(roi_5), 2)
+            }
 
             return {
                 "dataset_scope": "full_oot_20k" if len(y_test) > 1000 else "sample_200_smoke_test",

@@ -24,18 +24,18 @@
     "roi_percentage": 64.72
   },
   "metrics_at_5_percent_fpr": {
-    "threshold": 0.69,
+    "threshold": 0.6925,
     "true_positives_caught": 124,
-    "false_positives_flagged": 1025,
+    "false_positives_flagged": 1001,
     "uncaught_fraud_fn": 172,
-    "true_negatives": 19166,
+    "true_negatives": 19190,
     "recall_percentage": 41.89,
-    "fpr_percentage": 5.08,
+    "fpr_percentage": 4.96,
     "gross_fraud_prevented_usd": 310000.0,
-    "false_alarm_investigation_cost_usd": 25625.0,
+    "false_alarm_investigation_cost_usd": 25025.0,
     "execution_cost_usd": 1024.35,
-    "net_dollars_saved_usd": 283350.65,
-    "roi_percentage": 38.29
+    "net_dollars_saved_usd": 283950.65,
+    "roi_percentage": 38.37
   },
   "metrics_at_threshold_0_95": {
     "threshold": 0.95,

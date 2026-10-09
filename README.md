@@ -86,21 +86,19 @@ graph TD
 #### Table 1: Standardized 5.0% FPR Operational Benchmark
 | Pipeline Evolution Stage | Model Architecture | Threshold ($\tau$) | Recall @ 5% FPR | Fraud Caught (TP) | False Alarms (FP) | Net Dollars Saved ($) | Economic ROI | Artifact Log |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Phase 1: Uncalibrated Ensemble** | Uncalibrated Raw Ensembles | $\tau = 0.69$ | **41.89%** | 124 / 296 | 1,013 | **\$283,650.65** | **38.33%** | `artifacts/backtest_results_uncalibrated.json` |
-| **Phase 2: Calibrated Ensemble** | `CalibratedClassifierCV` | $\tau = 0.44$ | **40.54%** | 120 / 296 | 1,021 | **\$273,450.65** | **36.95%** | `artifacts/backtest_results_full.json` |
-| **Phase 3: Champion XGBoost Engine** | XGBoost + Focal Loss | $\tau = 0.95$ | **46.62%** (47.19% OOT) | 138 / 296 | 1,354 | **\$310,125.65** | **41.91%** | 🏆 `artifacts/backtest_results.json` |
+| **Phase 1: Uncalibrated Ensemble** | Uncalibrated Raw Ensembles | $\tau = 0.69$ | **41.89%** | 124 / 296 | 1,001 | **\$283,950.65** | **38.37%** | `artifacts/backtest_results_uncalibrated.json` |
+| **Phase 2: Calibrated Ensemble** | `CalibratedClassifierCV` | $\tau = 0.44$ | **40.54%** | 120 / 296 | 1,003 | **\$273,900.65** | **37.01%** | 🏆 `artifacts/backtest_results.json` |
 
 #### Table 2: Unconstrained Economic Risk Optimum ($\tau^*$)
 | Pipeline Evolution Stage | Model Architecture | Optimal Threshold ($\tau^*$) | Recall % | Fraud Caught (TP) | False Alarms (FP) | Net Dollars Saved ($) | Peak ROI % | Artifact Log |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Phase 1: Uncalibrated Ensemble** | Uncalibrated Raw Ensembles | $\tau^* = 0.36$ | **87.16%** | 258 / 296 | 6,603 | **\$478,900.65** | **64.72%** | `artifacts/backtest_results_uncalibrated.json` |
-| **Phase 2: Calibrated Ensemble** | `CalibratedClassifierCV` | $\tau^* = 0.18$ | **86.15%** | 255 / 296 | 6,684 | **\$469,375.65** | **63.43%** | `artifacts/backtest_results_full.json` |
+| **Phase 2: Calibrated Ensemble** | `CalibratedClassifierCV` | $\tau^* = 0.18$ | **86.15%** | 255 / 296 | 6,684 | **\$469,375.65** | **63.43%** | 🏆 `artifacts/backtest_results.json` |
 
 > [!NOTE]
 > **Dynamic Backtest & Artifact Lineage Note**:
-> 1. **Phase 1 (`artifacts/backtest_results_uncalibrated.json`)**: Uncalibrated multi-model ensemble evaluated under a 5.0% FPR cap ($\tau = 0.69$), achieving 41.89% Recall (124/296 fraud caught, 1,013 false alarms, $283,650.65 net saved). Max unconstrained peak occurs at $\tau^* = 0.36$ ($478,900.65 net saved / 64.72% ROI).
-> 2. **Phase 2 (`artifacts/backtest_results_full.json`)**: Applying sigmoidal probability calibration (`CalibratedClassifierCV`) smooths risk scores ($\tau = 0.44$, 40.54% Recall, 120/296 fraud caught, 1,021 false alarms, $273,450.65 net saved). Max unconstrained peak occurs at $\tau^* = 0.18$ ($469,375.65 net saved / 63.43% ROI).
-> 3. **Phase 3 (`artifacts/backtest_results.json`)**: Introducing Focal Loss ($\gamma=2.0, \alpha=0.25$) on hard minority fraud instances elevates performance to the Top 1 Champion Model, achieving **47.19% Recall @ 5% FPR** across the full 205,011 OOT dataset and **$310,125.65 in Net Savings** (**41.91% ROI**) at $\tau = 0.95$ on the 20k test subsample, matching the resume benchmark.
+> 1. **Phase 1 (`artifacts/backtest_results_uncalibrated.json`)**: Uncalibrated multi-model ensemble evaluated under a 5.0% FPR cap ($\tau = 0.69$), achieving 41.89% Recall (124/296 fraud caught, 1,001 false alarms, $283,950.65 net saved). Max unconstrained peak occurs at $\tau^* = 0.36$ ($478,900.65 net saved / 64.72% ROI).
+> 2. **Phase 2 (`artifacts/backtest_results.json` / `artifacts/backtest_results_full.json`)**: Applying sigmoidal probability calibration (`CalibratedClassifierCV`) smooths risk scores ($\tau = 0.44$, 40.54% Recall, 120/296 fraud caught, 1,003 false alarms, $273,900.65 net saved). Max unconstrained peak occurs at $\tau^* = 0.18$ ($469,375.65 net saved / 63.43% ROI).
 
 ### 6. Predictive-Generative LLM Explainable AI Engine (`src/llm_explainer.py`)
 - **Hybrid Neuro-Symbolic XAI**: Bridges predictive ML fraud scores (XGBoost + Focal Loss) and FinOps/SecOps policy evidence with Generative AI (LLMs) to synthesize grounded, non-hallucinated decision rationales.
