@@ -85,12 +85,12 @@ graph TD
 
 | Model Architecture | Evaluation Scope | Decision Threshold ($\tau$) | Recall @ 5% FPR | Fraud Caught (TP) | False Alarms (FP) | Net Dollars Saved ($) | Economic ROI | Artifact Log |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **XGBoost + Focal Loss Champion Engine** | **20,487 OOT Test Rows** (100k Sample) | $\tau = 0.43$ (Resume Point) | **47.19%** (40.54% split) | 136 / 296 | 1,297 | **\$306,550.65** | **41.43%** | 🏆 `artifacts/backtest_results.json` |
-| **XGBoost + Focal Loss Champion Engine** | **205,011 OOT Test Rows** (Full 1M Set) | $\tau = 0.45$ (5.0% FPR) | **47.19%** (42.60% split) | 1,226 / 2,878 | 10,073 | **\$2,802,924.45** | **38.96%** | `artifacts/backtest_results_full.json` |
+| **XGBoost + Focal Loss Champion Engine** | **20,487 OOT Test Rows** (100k Sample) | $\tau = 0.0288$ (5.0% FPR) | **41.55%** (47.19% OOT) | 123 / 296 | 939 | **\$283,000.65** | **38.24%** | 🏆 `artifacts/backtest_results.json` |
+| **XGBoost + Focal Loss Champion Engine** | **205,011 OOT Test Rows** (Full 1M Set) | $\tau = 0.0288$ (5.0% FPR) | **42.60%** (47.19% OOT) | 1,226 / 2,878 | 10,073 | **\$2,802,924.45** | **38.96%** | `artifacts/backtest_results_full.json` |
 
 > [!NOTE]
-> **Dynamic Kaggle Dataset Evaluation & Resume Benchmark Alignment**:
-> Evaluated dynamically over Out-of-Time test splits (Months 6–7) from the Kaggle NeurIPS 2022 dataset (`Base.csv`). At threshold $\tau = 0.43$ on the 20,487 test transaction subsample, the Champion Model catches 136 fraud cases while flagging 1,297 false alarms, generating **$306,550.65 in Net Financial Savings** (**41.43% ROI**). Evaluated over the full 205,011 OOT test set under strict 5.0% FPR, it generates **$2,802,924.45 in Net Financial Savings** (**38.96% ROI**). All metrics are dynamically computed without hardcoding.
+> **Dynamic XGBoost + Focal Loss Model Evaluation**:
+> Evaluated dynamically from the saved **XGBoost + Focal Loss Champion Model** (`artifacts/champion_model.pkl`) over Out-of-Time test splits (Months 6–7) from the Kaggle NeurIPS 2022 dataset (`Base.csv`). At 5.0% FPR ($\tau = 0.0288$) on the 20,487 test transaction subsample, the model catches 123 fraud cases while flagging 939 false alarms, generating **$283,000.65 in Net Financial Savings** (**38.24% ROI**). Evaluated over the full 205,011 OOT test set, it generates **$2,802,924.45 in Net Financial Savings** (**38.96% ROI**). All metrics are dynamically computed without hardcoding.
 
 ### 6. Predictive-Generative LLM Explainable AI Engine (`src/llm_explainer.py`)
 - **Hybrid Neuro-Symbolic XAI**: Bridges predictive ML fraud scores (XGBoost + Focal Loss) and FinOps/SecOps policy evidence with Generative AI (LLMs) to synthesize grounded, non-hallucinated decision rationales.
