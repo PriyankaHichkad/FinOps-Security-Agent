@@ -83,13 +83,21 @@ graph TD
 - **Dynamic Threshold Grid & Metric Reconciliation**: Evaluates net dollar savings across 20,487 Out-of-Time test transactions under a 100:1 financial loss ratio ($2,500 fraud loss vs $25 false alarm investigation cost).
 - **Execution Cost Deduction**: Net savings calculations include a fixed decision execution cost deduction of **$1,024.35** ($20,487 \text{ test transactions} \times \$0.05 \text{ compute cost per transaction}$). All arithmetic reconciles to the exact cent.
 
-| Model Architecture | Threshold ($\tau$) | Recall @ 5% FPR | Fraud Caught (TP) | False Alarms (FP) | Net Dollars Saved ($) | Economic ROI | Status | Artifact Log |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **XGBoost + Focal Loss** | $\tau = 0.95$ | **47.19%** | 138 / 296 | 1,354 | **\$310,125.65** | **41.91%** | 🏆 **Top 1 Champion Model** | 🏆 `artifacts/backtest_results.json` |
+#### Table 1: Standardized 5.0% FPR Operational Benchmark
+| Model Architecture | Threshold ($\tau$) | Recall @ 5% FPR | Fraud Caught (TP) | False Alarms (FP) | Net Dollars Saved ($) | Economic ROI | Artifact Log |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Uncalibrated Model Ensemble** | $\tau = 0.69$ | **41.89%** | 124 / 296 | 1,001 | **\$283,950.65** | **38.37%** | `artifacts/backtest_results_uncalibrated.json` |
+| **Calibrated Champion Ensemble** | $\tau = 0.44$ | **40.54%** | 120 / 296 | 1,003 | **\$273,900.65** | **37.01%** | 🏆 `artifacts/backtest_results.json` |
+
+#### Table 2: Unconstrained Economic Risk Optimum ($\tau^*$)
+| Model Architecture | Optimal Threshold ($\tau^*$) | Recall % | Fraud Caught (TP) | False Alarms (FP) | Net Dollars Saved ($) | Peak ROI % | Artifact Log |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Uncalibrated Model Ensemble** | $\tau^* = 0.36$ | **87.16%** | 258 / 296 | 6,603 | **\$478,900.65** | **64.72%** | `artifacts/backtest_results_uncalibrated.json` |
+| **Calibrated Champion Ensemble** | $\tau^* = 0.18$ | **86.15%** | 255 / 296 | 6,684 | **\$469,375.65** | **63.43%** | 🏆 `artifacts/backtest_results.json` |
 
 > [!NOTE]
-> **Champion Model Financial Backtest Summary**:
-> Under Out-of-Time (OOT) temporal testing on 20,487 test transactions (Months 6–7), the **XGBoost + Focal Loss ($\gamma=2.0, \alpha=0.25$)** Champion Model achieves **47.19% Recall @ 5% FPR** across the full 205,011 OOT dataset. At operational decision threshold $\tau = 0.95$, the model intercepts 138 fraud incidents ($345,000.00 gross fraud prevented) while flagging 1,354 false alarms ($33,850.00 investigation cost), delivering **$310,125.65 in Net Dollars Saved** (**41.91% Economic ROI**) after deducting $1,024.35 in execution compute costs. All metrics are logged in `artifacts/backtest_results.json`.
+> **Dynamic Financial Backtest Evaluation**:
+> Evaluated dynamically over the 20,487 Out-of-Time test dataset (Months 6–7). Under a strict operational constraint of **5.0% False Positive Rate** (`FPR <= 0.05` via `roc_curve`), the Calibrated Champion Ensemble captures **40.54% Recall** ($\tau = 0.44$, 120/296 fraud caught, 1,003 false alarms), generating **$273,900.65 in Net Financial Savings** (**37.01% ROI**). When operating unconstrained at the economic optimum ($\tau^* = 0.18$), peak net savings reach **$469,375.65** (**63.43% ROI**). All metrics are dynamically computed and logged in `artifacts/backtest_results.json` and `artifacts/backtest_results_uncalibrated.json`.
 
 ### 6. Predictive-Generative LLM Explainable AI Engine (`src/llm_explainer.py`)
 - **Hybrid Neuro-Symbolic XAI**: Bridges predictive ML fraud scores (XGBoost + Focal Loss) and FinOps/SecOps policy evidence with Generative AI (LLMs) to synthesize grounded, non-hallucinated decision rationales.
