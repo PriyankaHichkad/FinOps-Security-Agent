@@ -50,7 +50,7 @@ class FinOpsBacktestEngine:
             self.model = None
 
     def run_backtest(self, sample_size=100000):
-        """Runs vectorized event-based backtesting on Out-of-Time test data."""
+        """Runs vectorized event-based backtesting on Out-of-Time test data across fine threshold grids."""
         if self.model is None:
             logger.error("Champion model not loaded. Aborting backtest.")
             return {}
@@ -67,8 +67,7 @@ class FinOpsBacktestEngine:
                 logger.error("Could not resolve dataset for backtesting.")
                 return {}
         else:
-            nrows = sample_size * 5 if sample_size and sample_size < 50000 else None
-            df = pd.read_csv(DATA_PATH, nrows=nrows)
+            df = pd.read_csv(DATA_PATH)
 
         if len(df) > sample_size:
             df = df.sample(n=min(len(df), sample_size), random_state=42)
@@ -92,69 +91,101 @@ class FinOpsBacktestEngine:
         X_sc = self.scaler.transform(X_test)
         X_pca = self.pca.transform(X_sc)
 
+        # 1. Calibrated probabilities
         try:
-            y_proba = self.model.predict_proba(X_sc)[:, 1]
+            y_proba_calib = self.model.predict_proba(X_sc)[:, 1]
         except Exception:
-            y_proba = self.model.predict_proba(X_pca)[:, 1]
+            y_proba_calib = self.model.predict_proba(X_pca)[:, 1]
 
-        # Calculate Unmitigated Exposure Loss (0% fraud caught)
+        # 2. Uncalibrated probabilities (extracting base estimators from CalibratedClassifierCV wrapper)
+        uncalib_submodels = []
+        if hasattr(self.model, "models_and_weights"):
+            for sub_m, w, name in self.model.models_and_weights:
+                if hasattr(sub_m, "estimator"):
+                    base_m = sub_m.estimator
+                elif hasattr(sub_m, "calibrated_classifiers_") and len(sub_m.calibrated_classifiers_) > 0:
+                    base_m = sub_m.calibrated_classifiers_[0].estimator
+                else:
+                    base_m = sub_m
+                uncalib_submodels.append((base_m, w, name))
+            from src.ml_engine import ChampionEnsemble
+            uncalib_ensemble = ChampionEnsemble(uncalib_submodels)
+            try:
+                y_proba_uncalib = uncalib_ensemble.predict_proba(X_sc)[:, 1]
+            except Exception:
+                y_proba_uncalib = uncalib_ensemble.predict_proba(X_pca)[:, 1]
+        else:
+            y_proba_uncalib = y_proba_calib
+
         total_fraud_incidents = np.sum(y_test == 1)
         unmitigated_baseline_loss = total_fraud_incidents * self.avg_fraud_loss
 
-        threshold_grid = np.linspace(0.05, 0.95, 19)
-        simulation_results = []
-        best_net_savings = -float("inf")
-        optimal_threshold = 0.50
-        optimal_metrics = {}
+        fine_threshold_grid = np.round(np.linspace(0.01, 0.99, 99), 2)
 
-        for tau in threshold_grid:
-            y_pred = (y_proba >= tau).astype(int)
-            tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
+        def _evaluate_simulation(y_proba, calibration_status="calibrated"):
+            sim_results = []
+            best_saved = -float("inf")
+            optimal_tau = 0.50
+            best_entry = {}
 
-            gross_savings = tp * self.avg_fraud_loss
-            fp_investigation_cost = fp * self.false_positive_cost
-            execution_cost = len(y_test) * self.decision_cost
+            for tau in fine_threshold_grid:
+                tau_val = round(float(tau), 2)
+                y_pred = (y_proba >= tau_val).astype(int)
+                tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
 
-            net_dollars_saved = gross_savings - fp_investigation_cost - execution_cost
-            roi_percentage = (net_dollars_saved / max(unmitigated_baseline_loss, 1.0)) * 100
+                gross_savings = tp * self.avg_fraud_loss
+                fp_cost = fp * self.false_positive_cost
+                exec_cost = len(y_test) * self.decision_cost
 
-            res_entry = {
-                "threshold": round(float(tau), 2),
-                "true_positives_caught": int(tp),
-                "false_positives_flagged": int(fp),
-                "uncaught_fraud_fn": int(fn),
-                "gross_fraud_prevented_usd": round(float(gross_savings), 2),
-                "false_alarm_investigation_cost_usd": round(float(fp_investigation_cost), 2),
-                "net_dollars_saved_usd": round(float(net_dollars_saved), 2),
-                "roi_percentage": round(float(roi_percentage), 2)
+                net_saved = gross_savings - fp_cost - exec_cost
+                roi = (net_saved / max(unmitigated_baseline_loss, 1.0)) * 100
+
+                entry = {
+                    "threshold": tau_val,
+                    "true_positives_caught": int(tp),
+                    "false_positives_flagged": int(fp),
+                    "uncaught_fraud_fn": int(fn),
+                    "gross_fraud_prevented_usd": round(float(gross_savings), 2),
+                    "false_alarm_investigation_cost_usd": round(float(fp_cost), 2),
+                    "execution_cost_usd": round(float(exec_cost), 2),
+                    "net_dollars_saved_usd": round(float(net_saved), 2),
+                    "roi_percentage": round(float(roi), 2)
+                }
+                sim_results.append(entry)
+
+                if net_saved > best_saved:
+                    best_saved = net_saved
+                    optimal_tau = tau_val
+                    best_entry = entry
+
+            return {
+                "dataset_scope": "full_oot_20k" if len(y_test) > 1000 else "sample_200_smoke_test",
+                "dataset_notes": f"Evaluated on a {len(y_test):,} transaction subsample (sampled from ~205,011 Out-of-Time test rows in Months 6-7). Fixed decision execution cost is {len(y_test):,} x $0.05 = ${len(y_test)*0.05:,.2f}.",
+                "calibration_status": calibration_status,
+                "total_test_transactions": len(y_test),
+                "total_fraud_incidents": int(total_fraud_incidents),
+                "unmitigated_baseline_exposure_usd": round(float(unmitigated_baseline_loss), 2),
+                "optimal_economic_threshold": optimal_tau,
+                "optimal_net_dollars_saved_usd": round(float(best_saved), 2),
+                "optimal_roi_percentage": best_entry.get("roi_percentage", 0.0),
+                "optimal_metrics": best_entry,
+                "threshold_grid_simulation": sim_results
             }
-            simulation_results.append(res_entry)
 
-            if net_dollars_saved > best_net_savings:
-                best_net_savings = net_dollars_saved
-                optimal_threshold = round(float(tau), 2)
-                optimal_metrics = res_entry
-
-        summary = {
-            "dataset_scope": "full_oot_20k" if len(y_test) > 1000 else "sample_200_smoke_test",
-            "total_test_transactions": len(y_test),
-            "total_fraud_incidents": int(total_fraud_incidents),
-            "unmitigated_baseline_exposure_usd": round(float(unmitigated_baseline_loss), 2),
-            "optimal_economic_threshold": optimal_threshold,
-            "optimal_net_dollars_saved_usd": round(float(best_net_savings), 2),
-            "optimal_roi_percentage": optimal_metrics.get("roi_percentage", 0.0),
-            "optimal_metrics": optimal_metrics,
-            "threshold_grid_simulation": simulation_results
-        }
+        calibrated_summary = _evaluate_simulation(y_proba_calib, calibration_status="calibrated_sigmoid")
+        uncalibrated_summary = _evaluate_simulation(y_proba_uncalib, calibration_status="uncalibrated_raw")
 
         os.makedirs(os.path.dirname(BACKTEST_RESULTS_PATH), exist_ok=True)
         with open(BACKTEST_RESULTS_PATH, "w") as f:
-            json.dump(summary, f, indent=2)
+            json.dump(calibrated_summary, f, indent=2)
 
         out_name = "backtest_results_full.json" if len(y_test) > 1000 else "backtest_results_sample.json"
-        target_scoped_path = os.path.join(BASE_DIR, "artifacts", out_name)
-        with open(target_scoped_path, "w") as f:
-            json.dump(summary, f, indent=2)
+        with open(os.path.join(BASE_DIR, "artifacts", out_name), "w") as f:
+            json.dump(calibrated_summary, f, indent=2)
+
+        uncalib_out_name = "backtest_results_uncalibrated.json" if len(y_test) > 1000 else "backtest_results_uncalibrated_sample.json"
+        with open(os.path.join(BASE_DIR, "artifacts", uncalib_out_name), "w") as f:
+            json.dump(uncalibrated_summary, f, indent=2)
 
         # Log Backtesting Results to MLflow
         if HAS_MLFLOW and mlflow:
@@ -167,17 +198,18 @@ class FinOpsBacktestEngine:
                     mlflow.set_tag("stage", "Economic_Backtest")
                     mlflow.log_param("avg_fraud_loss_usd", self.avg_fraud_loss)
                     mlflow.log_param("false_positive_cost_usd", self.false_positive_cost)
-                    mlflow.log_param("optimal_economic_threshold", optimal_threshold)
+                    mlflow.log_param("optimal_economic_threshold", calibrated_summary["optimal_economic_threshold"])
                     mlflow.log_metric("unmitigated_baseline_exposure_usd", unmitigated_baseline_loss)
-                    mlflow.log_metric("optimal_net_dollars_saved_usd", best_net_savings)
-                    mlflow.log_metric("optimal_roi_percentage", optimal_metrics.get("roi_percentage", 0.0))
+                    mlflow.log_metric("optimal_net_dollars_saved_usd", calibrated_summary["optimal_net_dollars_saved_usd"])
+                    mlflow.log_metric("optimal_roi_percentage", calibrated_summary["optimal_roi_percentage"])
                     mlflow.log_artifact(BACKTEST_RESULTS_PATH)
+                    mlflow.log_artifact(os.path.join(BASE_DIR, "artifacts", uncalib_out_name))
                 mlflow.end_run()
                 logger.info("Successfully logged Financial Backtest simulation to MLflow.")
             except Exception as e_ml:
                 logger.warning(f"MLflow backtest logging notice: {e_ml}")
 
-        return summary
+        return calibrated_summary
 
 def main():
     print("=" * 70)

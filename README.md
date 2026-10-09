@@ -80,15 +80,18 @@ graph TD
 ### 5. Financial Backtesting Loss Simulator (`src/backtest_engine.py`)
 - **Event-Based Loss Simulation** (Inspired by Yves Hilpisch, *AI in Finance*, Ch. 10 & 11):
   $$\text{Net Saved}(\tau) = \Big( \text{TP}(\tau) \times \$2,500 \Big) - \Big( \text{FP}(\tau) \times \$25 \Big) - \Big( N_{\text{test}} \times \$0.05 \Big)$$
-- **Simulated Economic ROI & Continuous Model Calibration**: Evaluates net dollar savings across 20,487 Out-of-Time transactions under a 100:1 financial loss asymmetry ($2,500 fraud loss vs $25 false alarm investigation cost).
+- **Simulated Economic ROI & Score Calibration**: Evaluates net dollar savings over a fine 0.01-step threshold grid (0.01 to 0.99) across a 20,487 Out-of-Time test sample (subsampled from ~205,011 rows in Months 6–7) under a 100:1 financial loss asymmetry ($2,500 fraud loss vs $25 false alarm investigation cost).
+- **Execution Cost Deduction**: Net savings calculations include a fixed decision execution cost deduction of **$1,024.35** ($20,487 \text{ test transactions} \times \$0.05 \text{ compute cost per transaction}$).
 
-| Optimization Stage | Probability Calibration | Optimal Threshold ($\tau^*$) | Fraud Caught (TP) | Net Dollars Saved ($) | Economic ROI | Status |
+| Strategy / Evaluation Stage | Probability Calibration | Optimal Threshold ($\tau^*$) | Fraud Caught (TP) | Net Dollars Saved ($) | Economic ROI | Artifact Log |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Phase 1: Baseline Benchmark** | Uncalibrated Focal Loss Scores | $\tau^* = 0.95$ | 138 / 296 | **\$310,056.75** | **41.90%** | Resume Benchmark |
-| **Phase 2: Production Optimization** | `CalibratedClassifierCV` (Sigmoid) | **$\tau^* = 0.15$** | **259 / 296** | **\$457,200.65** | **61.78%** | 🏆 Current Production Champion |
+| **Phase 1: Uncalibrated Baseline** | Uncalibrated Raw Ensembles | $\tau^* = 0.36$ | 258 / 296 | **\$478,900.65** | **64.72%** | `artifacts/backtest_results_uncalibrated.json` |
+| **Phase 2: Calibrated Optimization** | `CalibratedClassifierCV` (Sigmoid) | **$\tau^* = 0.18$** | **255 / 296** | **\$469,375.65** | **63.43%** | `artifacts/backtest_results_full.json` |
 
 > [!NOTE]
-> **Engineering Progression Note**: The initial baseline (Phase 1: $310,056.75 net savings / 41.90% ROI at $\tau^* = 0.95$) evaluates raw uncalibrated focal loss probability scores. Introducing sigmoidal probability calibration (`CalibratedClassifierCV`) in Phase 2 maps model outputs to true empirical fraud risk $P(\text{fraud} \mid x)$, allowing the system to capture 87.5% of all fraud incidents (259/296) and elevating net savings to **$457,200.65** (**61.78% ROI**) at optimal threshold $\tau^* = 0.15$. Full benchmark metrics are serialized in `artifacts/backtest_results_full.json`.
+> **Evaluation & Calibration Lineage Note**:
+> 1. **Phase 1 (Uncalibrated Ensembles)**: Evaluated over raw uncalibrated model scores. The 100-point fine grid sweep identifies optimal economic net savings at threshold $\tau^* = 0.36$ ($478,900.65 Net Savings / 64.72% ROI), serialized in `artifacts/backtest_results_uncalibrated.json`.
+> 2. **Phase 2 (Calibrated Optimization)**: Applying sigmoidal probability calibration (`CalibratedClassifierCV`) smooths probability calibration across models, stabilizing decision cutoffs around $\tau^* = 0.18$ ($469,375.65 Net Savings / 63.43% ROI), serialized in `artifacts/backtest_results_full.json`.
 
 ### 6. Predictive-Generative LLM Explainable AI Engine (`src/llm_explainer.py`)
 - **Hybrid Neuro-Symbolic XAI**: Bridges predictive ML fraud scores (XGBoost + Focal Loss) and FinOps/SecOps policy evidence with Generative AI (LLMs) to synthesize grounded, non-hallucinated decision rationales.
