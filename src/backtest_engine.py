@@ -49,7 +49,7 @@ class FinOpsBacktestEngine:
             logger.error(f"Error loading artifacts for backtesting: {e}")
             self.model = None
 
-    def run_backtest(self, sample_size=1000000):
+    def run_backtest(self, sample_size=100000):
         """Runs vectorized event-based backtesting on Out-of-Time test data across fine threshold grids."""
         if self.model is None:
             logger.error("Champion model not loaded. Aborting backtest.")
