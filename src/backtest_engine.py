@@ -225,13 +225,14 @@ class FinOpsBacktestEngine:
         calibrated_summary = _evaluate_simulation(y_proba_calib, calibration_status="calibrated_sigmoid")
         uncalibrated_summary = _evaluate_simulation(y_proba_uncalib, calibration_status="uncalibrated_raw")
 
-        os.makedirs(os.path.dirname(BACKTEST_RESULTS_PATH), exist_ok=True)
-        with open(BACKTEST_RESULTS_PATH, "w") as f:
-            json.dump(calibrated_summary, f, indent=2)
-
         out_name = "backtest_results_full.json" if len(y_test) > 1000 else "backtest_results_sample.json"
         with open(os.path.join(BASE_DIR, "artifacts", out_name), "w") as f:
             json.dump(calibrated_summary, f, indent=2)
+
+        if len(y_test) > 1000:
+            os.makedirs(os.path.dirname(BACKTEST_RESULTS_PATH), exist_ok=True)
+            with open(BACKTEST_RESULTS_PATH, "w") as f:
+                json.dump(calibrated_summary, f, indent=2)
 
         uncalib_out_name = "backtest_results_uncalibrated.json" if len(y_test) > 1000 else "backtest_results_uncalibrated_sample.json"
         with open(os.path.join(BASE_DIR, "artifacts", uncalib_out_name), "w") as f:
