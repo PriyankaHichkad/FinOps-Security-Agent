@@ -127,6 +127,11 @@ class FinOpsBacktestEngine:
             best_saved = -float("inf")
             optimal_tau = 0.50
             best_entry = {}
+            tau_095_entry = {}
+            fpr_5_entry = {}
+            best_fpr_diff = float("inf")
+
+            total_non_fraud = int(np.sum(y_test == 0))
 
             for tau in fine_threshold_grid:
                 tau_val = round(float(tau), 2)
@@ -139,12 +144,17 @@ class FinOpsBacktestEngine:
 
                 net_saved = gross_savings - fp_cost - exec_cost
                 roi = (net_saved / max(unmitigated_baseline_loss, 1.0)) * 100
+                recall = (tp / max(1, total_fraud_incidents)) * 100
+                fpr = (fp / max(1, total_non_fraud)) * 100
 
                 entry = {
                     "threshold": tau_val,
                     "true_positives_caught": int(tp),
                     "false_positives_flagged": int(fp),
                     "uncaught_fraud_fn": int(fn),
+                    "true_negatives": int(tn),
+                    "recall_percentage": round(float(recall), 2),
+                    "fpr_percentage": round(float(fpr), 2),
                     "gross_fraud_prevented_usd": round(float(gross_savings), 2),
                     "false_alarm_investigation_cost_usd": round(float(fp_cost), 2),
                     "execution_cost_usd": round(float(exec_cost), 2),
@@ -158,17 +168,28 @@ class FinOpsBacktestEngine:
                     optimal_tau = tau_val
                     best_entry = entry
 
+                if tau_val == 0.95:
+                    tau_095_entry = entry
+
+                fpr_diff = abs((fpr / 100.0) - 0.05)
+                if fpr_diff < best_fpr_diff:
+                    best_fpr_diff = fpr_diff
+                    fpr_5_entry = entry
+
             return {
                 "dataset_scope": "full_oot_20k" if len(y_test) > 1000 else "sample_200_smoke_test",
                 "dataset_notes": f"Evaluated on a {len(y_test):,} transaction subsample (sampled from ~205,011 Out-of-Time test rows in Months 6-7). Fixed decision execution cost is {len(y_test):,} x $0.05 = ${len(y_test)*0.05:,.2f}.",
                 "calibration_status": calibration_status,
                 "total_test_transactions": len(y_test),
                 "total_fraud_incidents": int(total_fraud_incidents),
+                "total_non_fraud_incidents": int(total_non_fraud),
                 "unmitigated_baseline_exposure_usd": round(float(unmitigated_baseline_loss), 2),
                 "optimal_economic_threshold": optimal_tau,
                 "optimal_net_dollars_saved_usd": round(float(best_saved), 2),
                 "optimal_roi_percentage": best_entry.get("roi_percentage", 0.0),
                 "optimal_metrics": best_entry,
+                "metrics_at_5_percent_fpr": fpr_5_entry,
+                "metrics_at_threshold_0_95": tau_095_entry,
                 "threshold_grid_simulation": sim_results
             }
 
