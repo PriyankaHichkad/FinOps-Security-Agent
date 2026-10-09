@@ -49,7 +49,7 @@ class FinOpsBacktestEngine:
             logger.error(f"Error loading artifacts for backtesting: {e}")
             self.model = None
 
-    def run_backtest(self, sample_size=100000):
+    def run_backtest(self, sample_size=1000000):
         """Runs vectorized event-based backtesting on Out-of-Time test data across fine threshold grids."""
         if self.model is None:
             logger.error("Champion model not loaded. Aborting backtest.")
@@ -69,7 +69,7 @@ class FinOpsBacktestEngine:
         else:
             df = pd.read_csv(DATA_PATH)
 
-        if len(df) > sample_size:
+        if sample_size is not None and len(df) > sample_size:
             df = df.sample(n=min(len(df), sample_size), random_state=42)
 
         # Apply Out-of-Time split (Months 6-7 for testing)
