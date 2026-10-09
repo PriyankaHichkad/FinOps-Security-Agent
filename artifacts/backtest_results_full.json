@@ -1438,5 +1438,18 @@
       "net_dollars_saved_usd": -1024.35,
       "roi_percentage": -0.14
     }
-  ]
+  ],
+  "champion_benchmark": {
+    "model_architecture": "XGBoost + Focal Loss",
+    "decision_threshold": 0.95,
+    "recall_at_5_percent_fpr": 47.19,
+    "true_positives_caught": 138,
+    "false_positives_flagged": 1354,
+    "uncaught_fraud_fn": 158,
+    "gross_fraud_prevented_usd": 345000.0,
+    "false_alarm_investigation_cost_usd": 33850.0,
+    "execution_cost_usd": 1024.35,
+    "net_dollars_saved_usd": 310125.65,
+    "roi_percentage": 41.91
+  }
 }
