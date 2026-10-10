@@ -120,7 +120,7 @@ class FinOpsBacktestEngine:
         total_fraud_incidents = np.sum(y_test == 1)
         unmitigated_baseline_loss = total_fraud_incidents * self.avg_fraud_loss
 
-        fine_threshold_grid = np.round(np.linspace(0.01, 0.99, 99), 2)
+        fine_threshold_grid = np.round(np.concatenate([np.linspace(0.001, 0.01, 10), np.linspace(0.02, 0.99, 98)]), 4)
 
         def _evaluate_simulation(y_proba, calibration_status="calibrated"):
             sim_results = []
@@ -132,7 +132,7 @@ class FinOpsBacktestEngine:
             total_non_fraud = int(np.sum(y_test == 0))
 
             for tau in fine_threshold_grid:
-                tau_val = round(float(tau), 2)
+                tau_val = round(float(tau), 4)
                 y_pred = (y_proba >= tau_val).astype(int)
                 tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
 
@@ -282,7 +282,7 @@ def main():
         print(f"Return on Investment (ROI %)     : {results['optimal_roi_percentage']:.2f}%")
         
         print("\n" + "=" * 70)
-        print("🎯 PRIMARY OPERATING BENCHMARK (Recall @ 5% FPR — τ ≈ 0.43 / 0.45):")
+        print(f"🎯 PRIMARY OPERATING BENCHMARK (Recall @ 5% FPR — τ = {m_5.get('threshold')}):")
         print(f"  • Operating Threshold (τ)    : {m_5.get('threshold')}")
         print(f"  • Fraud Caught (TP)          : {m_5.get('true_positives_caught')} / {results['total_fraud_incidents']}")
         print(f"  • False Alarms (FP)          : {m_5.get('false_positives_flagged')} ({m_5.get('fpr_percentage')}%)")
