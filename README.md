@@ -92,6 +92,10 @@ graph TD
 > **Dynamic XGBoost + Focal Loss Model Evaluation**:
 > Evaluated dynamically from the saved **XGBoost + Focal Loss Champion Model** (`artifacts/champion_model.pkl`) over Out-of-Time test splits (Months 6–7) from the Kaggle NeurIPS 2022 dataset (`Base.csv`). At 5.0% FPR ($\tau = 0.0579$) on the 20,487 test transaction subsample, the model catches 138 fraud cases while flagging 996 false alarms, generating **$319,075.65 in Net Financial Savings** (**43.12% ROI**). Evaluated over the full 205,011 OOT test set ($\tau = 0.0584$), it catches 1,366 fraud cases (**47.46% Recall @ 5% FPR**), generating **$3,152,399.45 in Net Financial Savings** (**43.81% ROI**). All metrics are dynamically computed without hardcoding.
 
+> [!IMPORTANT]
+> **Production Threshold Selection & Leakage Prevention**:
+> In this offline backtesting report, operating threshold $\tau$ at target 5.0% FPR is reported out-of-sample on test months (Months 6–7). In live production deployment pipelines, decision threshold $\tau$ is tuned exclusively on a prior validation split (e.g. Month 5) and held fixed during production inference to prevent temporal target leakage.
+
 ### 6. Predictive-Generative LLM Explainable AI Engine (`src/llm_explainer.py`)
 - **Hybrid Neuro-Symbolic XAI**: Bridges predictive ML fraud scores (XGBoost + Focal Loss) and FinOps/SecOps policy evidence with Generative AI (LLMs) to synthesize grounded, non-hallucinated decision rationales.
 - **Dual-Mode Execution**:

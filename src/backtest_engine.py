@@ -205,9 +205,10 @@ class FinOpsBacktestEngine:
                 "roi_percentage": round(float(roi_5), 2)
             }
 
+            scope_name = "full_oot_205k" if len(y_test) > 100000 else ("sample_oot_20k" if len(y_test) > 1000 else "sample_200_smoke_test")
             return {
-                "dataset_scope": "full_oot_20k" if len(y_test) > 1000 else "sample_200_smoke_test",
-                "dataset_notes": f"Evaluated on a {len(y_test):,} transaction subsample (sampled from ~205,011 Out-of-Time test rows in Months 6-7). Fixed decision execution cost is {len(y_test):,} x $0.05 = ${len(y_test)*0.05:,.2f}.",
+                "dataset_scope": scope_name,
+                "dataset_notes": f"Evaluated on a {len(y_test):,} transaction Out-of-Time split (Months 6-7). Fixed decision execution cost is {len(y_test):,} x $0.05 = ${len(y_test)*0.05:,.2f}. Note: In production pipelines, threshold tau is fixed on a validation split (Month 5) before test deployment.",
                 "calibration_status": calibration_status,
                 "total_test_transactions": len(y_test),
                 "total_fraud_incidents": int(total_fraud_incidents),
@@ -225,18 +226,33 @@ class FinOpsBacktestEngine:
         calibrated_summary = _evaluate_simulation(y_proba_calib, calibration_status="calibrated_sigmoid")
         uncalibrated_summary = _evaluate_simulation(y_proba_uncalib, calibration_status="uncalibrated_raw")
 
-        out_name = "backtest_results_full.json" if len(y_test) > 1000 else "backtest_results_sample.json"
-        with open(os.path.join(BASE_DIR, "artifacts", out_name), "w") as f:
-            json.dump(calibrated_summary, f, indent=2)
-
-        if len(y_test) > 1000:
-            os.makedirs(os.path.dirname(BACKTEST_RESULTS_PATH), exist_ok=True)
+        if len(y_test) > 100000:
+            full_calib_file = os.path.join(BASE_DIR, "artifacts", "backtest_results_205k_full.json")
+            full_uncalib_file = os.path.join(BASE_DIR, "artifacts", "backtest_results_uncalibrated_205k.json")
+            with open(full_calib_file, "w") as f:
+                json.dump(calibrated_summary, f, indent=2)
+            with open(os.path.join(BASE_DIR, "artifacts", "backtest_results_full.json"), "w") as f:
+                json.dump(calibrated_summary, f, indent=2)
             with open(BACKTEST_RESULTS_PATH, "w") as f:
                 json.dump(calibrated_summary, f, indent=2)
-
-        uncalib_out_name = "backtest_results_uncalibrated.json" if len(y_test) > 1000 else "backtest_results_uncalibrated_sample.json"
-        with open(os.path.join(BASE_DIR, "artifacts", uncalib_out_name), "w") as f:
-            json.dump(uncalibrated_summary, f, indent=2)
+            with open(full_uncalib_file, "w") as f:
+                json.dump(uncalibrated_summary, f, indent=2)
+            with open(os.path.join(BASE_DIR, "artifacts", "backtest_results_uncalibrated.json"), "w") as f:
+                json.dump(uncalibrated_summary, f, indent=2)
+        elif len(y_test) > 1000:
+            sample_calib_file = os.path.join(BASE_DIR, "artifacts", "backtest_results_20k_sample.json")
+            sample_uncalib_file = os.path.join(BASE_DIR, "artifacts", "backtest_results_uncalibrated_20k.json")
+            with open(sample_calib_file, "w") as f:
+                json.dump(calibrated_summary, f, indent=2)
+            with open(sample_uncalib_file, "w") as f:
+                json.dump(uncalibrated_summary, f, indent=2)
+        else:
+            smoke_calib_file = os.path.join(BASE_DIR, "artifacts", "backtest_results_smoke_test.json")
+            smoke_uncalib_file = os.path.join(BASE_DIR, "artifacts", "backtest_results_uncalibrated_smoke_test.json")
+            with open(smoke_calib_file, "w") as f:
+                json.dump(calibrated_summary, f, indent=2)
+            with open(smoke_uncalib_file, "w") as f:
+                json.dump(uncalibrated_summary, f, indent=2)
 
         # Log Backtesting Results to MLflow
         if HAS_MLFLOW and mlflow:
@@ -251,10 +267,10 @@ class FinOpsBacktestEngine:
                     mlflow.log_param("false_positive_cost_usd", self.false_positive_cost)
                     mlflow.log_param("optimal_economic_threshold", calibrated_summary["optimal_economic_threshold"])
                     mlflow.log_metric("unmitigated_baseline_exposure_usd", unmitigated_baseline_loss)
-                    mlflow.log_metric("optimal_net_dollars_saved_usd", calibrated_summary["optimal_net_dollars_saved_usd"])
-                    mlflow.log_metric("optimal_roi_percentage", calibrated_summary["optimal_roi_percentage"])
                     mlflow.log_artifact(BACKTEST_RESULTS_PATH)
-                    mlflow.log_artifact(os.path.join(BASE_DIR, "artifacts", uncalib_out_name))
+                    uncalib_log_file = os.path.join(BASE_DIR, "artifacts", "backtest_results_uncalibrated.json")
+                    if os.path.exists(uncalib_log_file):
+                        mlflow.log_artifact(uncalib_log_file)
                 mlflow.end_run()
                 logger.info("Successfully logged Financial Backtest simulation to MLflow.")
             except Exception as e_ml:
